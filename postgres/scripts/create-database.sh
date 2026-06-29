@@ -7,7 +7,7 @@
 # Example:
 #   ./scripts/create-database.sh blog
 #
-# Run from docs/example-postgresql-docker-compose/ (or any path — script resolves compose file).
+# Run from postgres/ (or any path — script resolves compose file relative to its location).
 
 set -euo pipefail
 
