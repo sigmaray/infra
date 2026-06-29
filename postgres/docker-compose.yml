@@ -1,0 +1,38 @@
+# Shared PostgreSQL for production VPS.
+# Apps on the same host connect via host.docker.internal:5432 (see flask-weather docker-compose.yml).
+#
+# First deploy:
+#   cp .env.example .env && $EDITOR .env
+#   docker compose up -d
+#
+# Add another project database later:
+#   ./scripts/create-database.sh <db_name>
+
+name: example-postgresql-docker-compose
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: postgresql
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+    volumes:
+      - volume-postgres:/var/lib/postgresql/data
+      - ./init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-postgres} -d postgres",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+volumes:
+  volume-postgres:

@@ -1,0 +1,15 @@
+#!/bin/bash
+# Template for additional projects. Copy to init/20-myproject.sh BEFORE the first
+# `docker compose up` (init scripts run only on empty data volume).
+#
+#   cp init/20-extra-databases.sh.example init/20-myproject.sh
+#   chmod +x init/20-myproject.sh
+#   # edit the database name below
+#
+# set -euo pipefail
+#
+# : "${POSTGRES_USER:?}"
+#
+# psql -v ON_ERROR_STOP=1 --username "${POSTGRES_USER}" --dbname postgres <<-EOSQL
+# 	CREATE DATABASE myproject;
+# EOSQL
