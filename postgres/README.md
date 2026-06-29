@@ -1,13 +1,13 @@
-# example-postgresql-docker-compose
+# Shared PostgreSQL
 
 Shared PostgreSQL 16 for a production VPS. A single instance serves multiple projects: each project gets its own database, and all apps connect as the standard `postgres` user.
 
-Docker apps on the same host connect via `host.docker.internal:5432` (see [flask-weather](../../docker-compose.yml) `docker-compose.yml`).
+Docker apps on the same host connect via `host.docker.internal:5432`.
 
 ## Quick start
 
 ```bash
-cd docs/example-postgresql-docker-compose
+cd postgres
 cp .env.example .env
 # set a strong POSTGRES_PASSWORD
 docker compose up -d
@@ -28,7 +28,7 @@ Connection string format:
 postgresql://postgres:<POSTGRES_PASSWORD>@host.docker.internal:<POSTGRES_PORT>/<database>
 ```
 
-Example for [flask-weather](../../README.md) (the `weather` database is created on first start):
+Example (the `weather` database is created on first start):
 
 ```
 postgresql://postgres:<POSTGRES_PASSWORD>@host.docker.internal:5432/weather
@@ -49,15 +49,14 @@ The port is bound to `127.0.0.1` — PostgreSQL is not exposed to the public int
 ## Layout
 
 ```
-docs/example-postgresql-docker-compose/
+postgres/
 ├── docker-compose.yml
 ├── .env.example
 ├── init/
 │   ├── 01-flask-weather.sh       # CREATE DATABASE weather (first start)
 │   └── 20-extra-databases.sh.example
 └── scripts/
-    ├── create-database.sh        # add a database on a running server
-    └── setup-vps.sh              # bootstrap Ubuntu VPS and deploy the stack
+    └── create-database.sh        # add a database on a running server
 ```
 
 ## Adding a database for a new project
@@ -99,24 +98,11 @@ docker compose exec postgres psql -U postgres
 
 ## VPS deployment
 
-Automated bootstrap (Ubuntu, git, Docker, compose stack):
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/sigmaray/flask-weather/main/docs/example-postgresql-docker-compose/scripts/setup-vps.sh | sudo bash
-# or from a checkout:
-sudo bash docs/example-postgresql-docker-compose/scripts/setup-vps.sh
-sudo bash docs/example-postgresql-docker-compose/scripts/setup-vps.sh --swap
-```
-
-The script deploys to `~/r/d/postgresql` by default, generates `POSTGRES_PASSWORD` in `.env` when unset, and starts the stack. Override with environment variables (see script header).
-
-Manual alternative:
-
-1. Copy `docs/example-postgresql-docker-compose/` to the server (e.g. `~/r/d/postgresql`).
+1. Copy `postgres/` to the server (e.g. `~/r/d/postgresql`).
 2. Create `.env` with a production password.
 3. Run `docker compose up -d`.
 
-Then deploy applications with `DATABASE_URL` pointing at `host.docker.internal`. For flask-weather, use [scripts/setup-vps.sh](../../scripts/setup-vps.sh) — that script expects PostgreSQL to already be reachable on the host.
+Deploy applications with `DATABASE_URL` pointing at `host.docker.internal`.
 
 ## Backups
 
