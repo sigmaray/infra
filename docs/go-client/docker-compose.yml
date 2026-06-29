@@ -1,0 +1,19 @@
+# Sample app connecting to shared PostgreSQL on the same host.
+# Requires the postgres stack from ../../postgres to be running.
+#
+#   cd docs/go-client
+#   cp .env.example .env   # set POSTGRES_PASSWORD to match postgres/.env
+#   docker compose up --build
+
+services:
+  app:
+    build: .
+    environment:
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@postgresql:5432/weather
+    networks:
+      - postgres
+
+networks:
+  postgres:
+    external: true
+    name: postgres_default

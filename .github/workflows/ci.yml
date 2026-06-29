@@ -1,0 +1,61 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  postgres:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate docker compose
+        working-directory: postgres
+        env:
+          POSTGRES_PASSWORD: ci-test-password
+        run: docker compose config --quiet
+
+      - name: Validate sample Go client compose
+        working-directory: docs/go-client
+        env:
+          POSTGRES_PASSWORD: ci-test-password
+        run: docker compose config --quiet
+
+      - name: Shellcheck
+        run: |
+          shellcheck postgres/init/01-flask-weather.sh postgres/scripts/create-database.sh
+
+      - name: Bash syntax check
+        run: |
+          bash -n postgres/init/01-flask-weather.sh
+          bash -n postgres/scripts/create-database.sh
+
+      - name: Script permissions
+        run: |
+          test -x postgres/init/01-flask-weather.sh
+          test -x postgres/scripts/create-database.sh
+
+      - name: Integration test
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: ci-test-password
+          POSTGRES_PORT: 5432
+        run: |
+          cleanup() {
+            docker compose -f docs/go-client/docker-compose.yml down --rmi local 2>/dev/null || true
+            docker compose -f postgres/docker-compose.yml down -v 2>/dev/null || true
+          }
+          trap cleanup EXIT
+
+          docker compose -f postgres/docker-compose.yml up -d --wait
+          docker compose -f postgres/docker-compose.yml exec -T postgres pg_isready -U postgres
+          docker compose -f postgres/docker-compose.yml exec -T postgres psql -U postgres -tAc \
+            "SELECT 1 FROM pg_database WHERE datname = 'weather'" | grep -qx 1
+
+          docker compose -f docs/go-client/docker-compose.yml up --build --abort-on-container-exit --exit-code-from app

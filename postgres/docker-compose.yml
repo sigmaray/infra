@@ -1,5 +1,6 @@
 # Shared PostgreSQL for production VPS.
-# Apps on the same host connect via host.docker.internal:5432
+# Docker apps: join network postgres_default, connect to postgresql:5432
+# Host-native apps: connect to 127.0.0.1:${POSTGRES_PORT:-5432}
 #
 # First deploy:
 #   cp .env.example .env && $EDITOR .env

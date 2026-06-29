@@ -66,4 +66,5 @@ WHERE NOT EXISTS (SELECT 1 FROM pg_database WHERE datname = :'db_name')
 EOSQL
 
 log "Done."
-log "Connection string: postgresql://${POSTGRES_USER}:<password>@host.docker.internal:${POSTGRES_PORT:-5432}/${DB_NAME}"
+log "Docker app (postgres_default network): postgresql://${POSTGRES_USER}:<password>@postgresql:5432/${DB_NAME}"
+log "Host-native app: postgresql://${POSTGRES_USER}:<password>@127.0.0.1:${POSTGRES_PORT:-5432}/${DB_NAME}"
