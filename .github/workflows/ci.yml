@@ -47,9 +47,9 @@ jobs:
 
           # Docker apps: connect via container name on infra network.
           docker run --rm --network infra curlimages/curl:8.12.1 \
-            -fsS "${curl_retry[@]}" -x "${http_proxy}" https://httpbin.org/ip | grep -q '"origin"'
+            -fsS "${curl_retry[@]}" -x "${http_proxy}" https://example.com/ | grep -q 'Example Domain'
           docker run --rm --network infra curlimages/curl:8.12.1 \
-            -fsS "${curl_retry[@]}" --socks5 "${docker_socks_proxy}" https://httpbin.org/ip | grep -q '"origin"'
+            -fsS "${curl_retry[@]}" --socks5 "${docker_socks_proxy}" https://example.com/ | grep -q 'Example Domain'
 
   postgres:
     runs-on: ubuntu-latest
@@ -195,7 +195,9 @@ jobs:
 
       - name: Validate docker compose
         working-directory: reverse-proxy
-        run: docker compose config --quiet
+        run: |
+          cp .env.example .env
+          docker compose config --quiet
 
       - name: Validate docker compose (local bind)
         working-directory: reverse-proxy
@@ -264,5 +266,5 @@ jobs:
             -d "{\"username\":\"${INIT_USERNAME}\",\"password\":\"${INIT_PASSWORD}\",\"remember\":false}")"
           echo "${session_response}" | grep -q '"status":"success"'
 
-          curl -fsS "${curl_retry[@]}" -x "${http_proxy}" https://httpbin.org/ip | grep -q '"origin"'
-          curl -fsS "${curl_retry[@]}" --socks5 "${socks_proxy}" https://httpbin.org/ip | grep -q '"origin"'
+          curl -fsS "${curl_retry[@]}" -x "${http_proxy}" https://example.com/ | grep -q 'Example Domain'
+          curl -fsS "${curl_retry[@]}" --socks5 "${socks_proxy}" https://example.com/ | grep -q 'Example Domain'
