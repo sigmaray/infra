@@ -5,6 +5,7 @@ Shared PostgreSQL 16 for a production VPS. A single instance serves multiple pro
 ## Quick start
 
 ```bash
+docker network create infra 2>/dev/null || true
 cd postgres
 cp .env.example .env
 # set a strong POSTGRES_PASSWORD

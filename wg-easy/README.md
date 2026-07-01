@@ -103,7 +103,7 @@ ssh -L 51821:127.0.0.1:51821 user@your-server.example.com
 
 - **Internet** (direct): set `WG_EASY_WEB_BIND_ADDRESS=0.0.0.0`, open TCP `WG_EASY_WEB_PORT` in the firewall. Use a strong password; set `INSECURE=false` and terminate TLS at a reverse proxy when possible.
 - **SSH tunnel**: keep the default `127.0.0.1` bind and use `ssh -L 51821:127.0.0.1:51821 user@server`.
-- **Reverse proxy** (recommended for team access): put Caddy, nginx, or Traefik in front of the web UI with HTTPS. Set `INSECURE=false` and forward to `127.0.0.1:51821` (or `wg-easy:<port>` on a shared Docker network).
+- **Reverse proxy** (recommended for team access): use the [`../reverse-proxy`](../reverse-proxy) Caddy stack. Set `INSECURE=false`, keep `WG_EASY_WEB_BIND_ADDRESS=127.0.0.1`, and open the web UI at `https://<WG_EASY_DOMAIN>/`.
 
 WireGuard UDP traffic is published on all interfaces — clients must reach this port directly.
 

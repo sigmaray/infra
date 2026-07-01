@@ -1,0 +1,7 @@
+http://{$WG_EASY_HOST:wg.localhost}, http://{$WG_EASY_ALT_HOST:wg.infra.local} {
+	reverse_proxy wg-easy:{$WG_EASY_WEB_PORT:51821}
+}
+
+http://{$STATIC_WEB_HOST:static.localhost}, http://{$STATIC_WEB_ALT_HOST:static.infra.local} {
+	reverse_proxy static-web:80
+}

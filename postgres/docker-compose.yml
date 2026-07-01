@@ -37,6 +37,7 @@ services:
 
 networks:
   infra:
+    external: true
     name: infra
 
 volumes:

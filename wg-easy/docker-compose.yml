@@ -1,7 +1,7 @@
 # WireGuard VPN server with web UI (wg-easy v15).
 # WireGuard UDP is published on all interfaces; the web UI defaults to 127.0.0.1 only.
 # Set WG_EASY_WEB_BIND_ADDRESS=0.0.0.0 in .env for internet access (see README).
-# Put a reverse proxy in front of the web UI for HTTPS in production.
+# Put ../reverse-proxy/ (Caddy) in front of the web UI for HTTPS in production.
 #
 # First deploy:
 #   cp .env.example .env && $EDITOR .env
@@ -44,3 +44,10 @@ services:
       resources:
         limits:
           memory: 256M
+    networks:
+      - infra
+
+networks:
+  infra:
+    external: true
+    name: infra

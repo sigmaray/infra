@@ -1,0 +1,32 @@
+# Static file web server (nginx).
+# Docker apps and Caddy reach it at static-web:80 on the infra network.
+# Host-native access: http://127.0.0.1:${STATIC_WEB_PORT:-8080} (see README).
+# Put ../reverse-proxy/ (Caddy) in front for hostname-based access in production.
+#
+# First deploy:
+#   cp .env.example .env && $EDITOR .env
+#   cp public/index.html.example public/index.html && $EDITOR public/index.html
+#   docker compose up -d
+
+services:
+  static-web:
+    image: nginx:1.27.4-alpine
+    container_name: static-web
+    restart: unless-stopped
+    ports:
+      - "${STATIC_WEB_BIND_ADDRESS:-127.0.0.1}:${STATIC_WEB_PORT:-8080}:80"
+    volumes:
+      - ./public:/usr/share/nginx/html:ro
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider -q http://127.0.0.1/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - infra
+
+networks:
+  infra:
+    external: true
+    name: infra

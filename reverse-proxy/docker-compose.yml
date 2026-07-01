@@ -1,0 +1,70 @@
+# Caddy reverse proxy and TCP forwarding for services on the infra network.
+# Caddy routes HTTP by hostname; socat forwards 3proxy ports (not HTTP).
+#
+# Prerequisites: infra Docker network (created by postgres/ or 3proxy/ stack).
+#
+# First deploy:
+#   cp .env.example .env && $EDITOR .env
+#   cp Caddyfile.example Caddyfile && $EDITOR Caddyfile
+#   docker compose up -d
+
+services:
+  caddy:
+    image: caddy:2.10.0-alpine
+    container_name: reverse-proxy
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "${CADDY_BIND_ADDRESS:-0.0.0.0}:${CADDY_HTTP_PORT:-80}:80"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+    networks:
+      - infra
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "wget --server-response --spider http://127.0.0.1:80/ 2>&1 | grep -q 'HTTP/'",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  # HTTP and SOCKS5 are not HTTP — forward TCP through the reverse-proxy stack (Caddy cannot proxy them).
+  http-proxy-forward:
+    image: alpine/socat:1.7.4.4-r0
+    container_name: reverse-proxy-http
+    restart: unless-stopped
+    command: TCP-LISTEN:3128,fork,reuseaddr TCP:3proxy:3128
+    ports:
+      - "${PROXY_FORWARD_BIND_ADDRESS:-0.0.0.0}:${HTTP_PROXY_PORT:-3128}:3128"
+    networks:
+      - infra
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z 127.0.0.1 3128"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  socks-forward:
+    image: alpine/socat:1.7.4.4-r0
+    container_name: reverse-proxy-socks
+    restart: unless-stopped
+    command: TCP-LISTEN:1080,fork,reuseaddr TCP:3proxy:1080
+    ports:
+      - "${PROXY_FORWARD_BIND_ADDRESS:-0.0.0.0}:${SOCKS_PROXY_PORT:-1080}:1080"
+    networks:
+      - infra
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z 127.0.0.1 1080"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+networks:
+  infra:
+    external: true
+    name: infra

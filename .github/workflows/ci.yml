@@ -2,7 +2,6 @@ name: CI
 
 on:
   push:
-    branches: [main]
   pull_request:
 
 permissions:
@@ -21,13 +20,6 @@ jobs:
           PROXY_PASSWORD: ci-test-password
         run: docker compose config --quiet
 
-      - name: Validate docker compose (public bind)
-        working-directory: 3proxy
-        env:
-          PROXY_PASSWORD: ci-test-password
-          PROXY_BIND_ADDRESS: 0.0.0.0
-        run: docker compose config --quiet
-
       - name: Shellcheck
         run: shellcheck 3proxy/scripts/generate-3proxy-cfg.sh
 
@@ -44,22 +36,18 @@ jobs:
           }
           trap cleanup EXIT
 
+          docker network create infra 2>/dev/null || true
+
           ./scripts/generate-3proxy-cfg.sh
           docker compose up -d --wait
 
-          http_proxy="http://${PROXY_USER}:${PROXY_PASSWORD}@127.0.0.1:3128"
-          socks_proxy="${PROXY_USER}:${PROXY_PASSWORD}@127.0.0.1:1080"
-          docker_http_proxy="http://${PROXY_USER}:${PROXY_PASSWORD}@3proxy:3128"
+          http_proxy="http://${PROXY_USER}:${PROXY_PASSWORD}@3proxy:3128"
           docker_socks_proxy="${PROXY_USER}:${PROXY_PASSWORD}@3proxy:1080"
           curl_retry=(--retry 3 --retry-delay 2 --retry-all-errors)
 
-          # Host-native apps: connect via published 127.0.0.1 ports.
-          curl -fsS "${curl_retry[@]}" -x "${http_proxy}" https://httpbin.org/ip | grep -q '"origin"'
-          curl -fsS "${curl_retry[@]}" --socks5 "${socks_proxy}" https://httpbin.org/ip | grep -q '"origin"'
-
           # Docker apps: connect via container name on infra network.
           docker run --rm --network infra curlimages/curl:8.12.1 \
-            -fsS "${curl_retry[@]}" -x "${docker_http_proxy}" https://httpbin.org/ip | grep -q '"origin"'
+            -fsS "${curl_retry[@]}" -x "${http_proxy}" https://httpbin.org/ip | grep -q '"origin"'
           docker run --rm --network infra curlimages/curl:8.12.1 \
             -fsS "${curl_retry[@]}" --socks5 "${docker_socks_proxy}" https://httpbin.org/ip | grep -q '"origin"'
 
@@ -107,6 +95,8 @@ jobs:
           }
           trap cleanup EXIT
 
+          docker network create infra 2>/dev/null || true
+
           docker compose -f postgres/docker-compose.yml up -d --wait
           docker compose -f postgres/docker-compose.yml exec -T postgres pg_isready -U postgres
           docker compose -f postgres/docker-compose.yml exec -T postgres psql -U postgres -tAc \
@@ -144,6 +134,7 @@ jobs:
           }
           trap cleanup EXIT
 
+          docker network create infra 2>/dev/null || true
           docker compose up -d --wait
 
           curl -fsS --retry 5 --retry-delay 2 --retry-all-errors \
@@ -162,3 +153,116 @@ jobs:
             wg-easy)"
           test -d "${data_dir}"
           echo "${data_dir}" | grep -q 'wg-easy/data'
+
+  static-web:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate docker compose
+        working-directory: static-web
+        run: docker compose config --quiet
+
+      - name: Integration test
+        working-directory: static-web
+        env:
+          STATIC_WEB_PORT: 8080
+        run: |
+          set -euo pipefail
+
+          cleanup() {
+            docker compose down 2>/dev/null || true
+          }
+          trap cleanup EXIT
+
+          docker network create infra 2>/dev/null || true
+          cp public/index.html.example public/index.html
+          docker compose up -d --wait
+
+          curl -fsS --retry 5 --retry-delay 2 --retry-all-errors \
+            "http://127.0.0.1:${STATIC_WEB_PORT}/" | grep -q 'Static Web'
+
+          docker run --rm --network infra curlimages/curl:8.12.1 \
+            -fsS --retry 3 --retry-delay 2 --retry-all-errors \
+            http://static-web:80/ | grep -q 'Static Web'
+
+  reverse-proxy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate docker compose
+        working-directory: reverse-proxy
+        run: docker compose config --quiet
+
+      - name: Validate docker compose (local bind)
+        working-directory: reverse-proxy
+        env:
+          CADDY_BIND_ADDRESS: 127.0.0.1
+          PROXY_FORWARD_BIND_ADDRESS: 127.0.0.1
+        run: docker compose config --quiet
+
+      - name: Validate Caddyfile
+        working-directory: reverse-proxy
+        run: |
+          cp .env.example .env
+          cp Caddyfile.example Caddyfile
+          docker run --rm \
+            -v "$(pwd)/Caddyfile:/etc/caddy/Caddyfile:ro" \
+            --env-file .env \
+            caddy:2.10.0-alpine caddy validate --config /etc/caddy/Caddyfile
+
+      - name: Integration test
+        env:
+          PROXY_USER: proxy
+          PROXY_PASSWORD: ci-test-password
+          INIT_HOST: 127.0.0.1
+          INIT_USERNAME: admin
+          INIT_PASSWORD: ci-test-password
+          WG_EASY_WEB_PORT: 51821
+          WG_EASY_WG_PORT: 51820
+        run: |
+          set -euo pipefail
+
+          cleanup() {
+            docker compose -f reverse-proxy/docker-compose.yml down 2>/dev/null || true
+            docker compose -f static-web/docker-compose.yml down 2>/dev/null || true
+            docker compose -f wg-easy/docker-compose.yml down 2>/dev/null || true
+            docker compose -f 3proxy/docker-compose.yml down 2>/dev/null || true
+            sudo rm -rf wg-easy/data 2>/dev/null || rm -rf wg-easy/data 2>/dev/null || true
+          }
+          trap cleanup EXIT
+
+          docker network create infra 2>/dev/null || true
+
+          (
+            cd 3proxy
+            ./scripts/generate-3proxy-cfg.sh
+          )
+          docker compose -f 3proxy/docker-compose.yml up -d --wait
+
+          docker compose -f wg-easy/docker-compose.yml up -d --wait
+          cp static-web/public/index.html.example static-web/public/index.html
+          docker compose -f static-web/docker-compose.yml up -d --wait
+
+          cp reverse-proxy/.env.example reverse-proxy/.env
+          cp reverse-proxy/Caddyfile.example reverse-proxy/Caddyfile
+          docker compose -f reverse-proxy/docker-compose.yml up -d --wait
+
+          curl_retry=(--retry 5 --retry-delay 2 --retry-all-errors)
+          http_proxy="http://${PROXY_USER}:${PROXY_PASSWORD}@127.0.0.1:3128"
+          socks_proxy="${PROXY_USER}:${PROXY_PASSWORD}@127.0.0.1:1080"
+
+          curl -fsS "${curl_retry[@]}" -H 'Host: wg.infra.local' http://127.0.0.1/ >/dev/null
+          curl -fsS "${curl_retry[@]}" -H 'Host: static.infra.local' http://127.0.0.1/ | grep -q 'Static Web'
+
+          session_response="$(curl -fsS -X POST -H 'Host: wg.infra.local' \
+            "http://127.0.0.1/api/session" \
+            -H 'Content-Type: application/json' \
+            -d "{\"username\":\"${INIT_USERNAME}\",\"password\":\"${INIT_PASSWORD}\",\"remember\":false}")"
+          echo "${session_response}" | grep -q '"status":"success"'
+
+          curl -fsS "${curl_retry[@]}" -x "${http_proxy}" https://httpbin.org/ip | grep -q '"origin"'
+          curl -fsS "${curl_retry[@]}" --socks5 "${socks_proxy}" https://httpbin.org/ip | grep -q '"origin"'
