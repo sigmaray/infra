@@ -9,6 +9,53 @@ permissions:
   contents: read
 
 jobs:
+  proxy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate docker compose
+        working-directory: 3proxy
+        env:
+          PROXY_PASSWORD: ci-test-password
+        run: docker compose config --quiet
+
+      - name: Shellcheck
+        run: shellcheck 3proxy/scripts/generate-3proxy-cfg.sh
+
+      - name: Integration test
+        working-directory: 3proxy
+        env:
+          PROXY_USER: proxy
+          PROXY_PASSWORD: ci-test-password
+        run: |
+          set -euo pipefail
+
+          cleanup() {
+            docker compose down 2>/dev/null || true
+          }
+          trap cleanup EXIT
+
+          ./scripts/generate-3proxy-cfg.sh
+          docker compose up -d --wait
+
+          http_proxy="http://${PROXY_USER}:${PROXY_PASSWORD}@127.0.0.1:3128"
+          socks_proxy="${PROXY_USER}:${PROXY_PASSWORD}@127.0.0.1:1080"
+          docker_http_proxy="http://${PROXY_USER}:${PROXY_PASSWORD}@3proxy:3128"
+          docker_socks_proxy="${PROXY_USER}:${PROXY_PASSWORD}@3proxy:1080"
+          curl_retry=(--retry 3 --retry-delay 2 --retry-all-errors)
+
+          # Host-native apps: connect via published 127.0.0.1 ports.
+          curl -fsS "${curl_retry[@]}" -x "${http_proxy}" https://httpbin.org/ip | grep -q '"origin"'
+          curl -fsS "${curl_retry[@]}" --socks5 "${socks_proxy}" https://httpbin.org/ip | grep -q '"origin"'
+
+          # Docker apps: connect via container name on 3proxy_default network.
+          docker run --rm --network 3proxy_default curlimages/curl:8.12.1 \
+            -fsS "${curl_retry[@]}" -x "${docker_http_proxy}" https://httpbin.org/ip | grep -q '"origin"'
+          docker run --rm --network 3proxy_default curlimages/curl:8.12.1 \
+            -fsS "${curl_retry[@]}" --socks5 "${docker_socks_proxy}" https://httpbin.org/ip | grep -q '"origin"'
+
   postgres:
     runs-on: ubuntu-latest
 
