@@ -106,3 +106,52 @@ jobs:
             "SELECT 1 FROM pg_database WHERE datname = 'weather'" | grep -qx 1
 
           docker compose -f docs/go-client/docker-compose.yml up --build --abort-on-container-exit --exit-code-from app
+
+  wg-easy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate docker compose
+        working-directory: wg-easy
+        env:
+          INIT_HOST: 127.0.0.1
+          INIT_PASSWORD: ci-test-password
+        run: docker compose config --quiet
+
+      - name: Integration test
+        working-directory: wg-easy
+        env:
+          INIT_HOST: 127.0.0.1
+          INIT_USERNAME: admin
+          INIT_PASSWORD: ci-test-password
+          WG_EASY_WEB_PORT: 51821
+          WG_EASY_WG_PORT: 51820
+        run: |
+          set -euo pipefail
+
+          cleanup() {
+            docker compose down 2>/dev/null || true
+            sudo rm -rf data 2>/dev/null || rm -rf data 2>/dev/null || true
+          }
+          trap cleanup EXIT
+
+          docker compose up -d --wait
+
+          curl -fsS --retry 5 --retry-delay 2 --retry-all-errors \
+            "http://127.0.0.1:${WG_EASY_WEB_PORT}/" >/dev/null
+
+          session_response="$(curl -fsS -X POST "http://127.0.0.1:${WG_EASY_WEB_PORT}/api/session" \
+            -H 'Content-Type: application/json' \
+            -d "{\"username\":\"${INIT_USERNAME}\",\"password\":\"${INIT_PASSWORD}\",\"remember\":false}")"
+          echo "${session_response}" | grep -q '"status":"success"'
+
+          docker compose exec -T wg-easy wg show | grep -q 'interface: wg0'
+          docker compose exec -T wg-easy wg show | grep -q 'listening port:'
+
+          data_dir="$(docker inspect --format \
+            '{{range .Mounts}}{{if eq .Destination "/etc/wireguard"}}{{.Source}}{{end}}{{end}}' \
+            wg-easy)"
+          test -d "${data_dir}"
+          echo "${data_dir}" | grep -q 'wg-easy/data'

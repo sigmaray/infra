@@ -1,0 +1,45 @@
+# WireGuard VPN server with web UI (wg-easy v15).
+# WireGuard UDP is published on all interfaces; the web UI is bound to 127.0.0.1 only.
+# Put a reverse proxy in front of the web UI for HTTPS in production.
+#
+# First deploy:
+#   cp .env.example .env && $EDITOR .env
+#   docker compose up -d
+
+services:
+  wg-easy:
+    image: ghcr.io/wg-easy/wg-easy:15
+    container_name: wg-easy
+    restart: unless-stopped
+    environment:
+      LANG: ${LANG:-en}
+      PORT: ${WG_EASY_WEB_PORT:-51821}
+      HOST: 0.0.0.0
+      INSECURE: ${INSECURE:-true}
+      INIT_ENABLED: ${INIT_ENABLED:-true}
+      INIT_USERNAME: ${INIT_USERNAME:-admin}
+      INIT_PASSWORD: ${INIT_PASSWORD:?Set INIT_PASSWORD in .env}
+      INIT_HOST: ${INIT_HOST:?Set INIT_HOST in .env}
+      INIT_PORT: ${INIT_PORT:-51820}
+    ports:
+      - "${WG_EASY_WG_PORT:-51820}:${WG_EASY_WG_PORT:-51820}/udp"
+      - "127.0.0.1:${WG_EASY_WEB_PORT:-51821}:${WG_EASY_WEB_PORT:-51821}/tcp"
+    volumes:
+      - ./data:/etc/wireguard
+      - /lib/modules:/lib/modules:ro
+    cap_add:
+      - NET_ADMIN
+      - SYS_MODULE
+    sysctls:
+      - net.ipv4.ip_forward=1
+      - net.ipv4.conf.all.src_valid_mark=1
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider -q http://127.0.0.1:$${PORT:-51821}/"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          memory: 256M
