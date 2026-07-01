@@ -19,15 +19,13 @@ docker compose ps
 docker compose logs -f wg-easy
 ```
 
-Open the web UI (from the server or via SSH tunnel):
+By default, the web UI is bound to `127.0.0.1` — local access only. Set `WG_EASY_WEB_BIND_ADDRESS=0.0.0.0` in `.env` to accept connections from the internet (see [Remote access](#remote-access)).
+
+Open the web UI:
 
 ```bash
 # on the server
 curl -fsS http://127.0.0.1:51821/
-
-# from your laptop (SSH tunnel)
-ssh -L 51821:127.0.0.1:51821 user@your-server.example.com
-# then open http://127.0.0.1:51821 in a browser
 ```
 
 Log in with `INIT_USERNAME` / `INIT_PASSWORD` from `.env`.
@@ -42,7 +40,8 @@ Log in with `INIT_USERNAME` / `INIT_PASSWORD` from `.env`.
 | `INIT_ENABLED` | `true` | Run unattended first-time setup on empty data directory |
 | `INIT_PORT` | `51820` | WireGuard UDP port used during setup (must match `WG_EASY_WG_PORT`) |
 | `INSECURE` | `true` | Allow HTTP for the web UI without HTTPS |
-| `WG_EASY_WEB_PORT` | `51821` | Host port for the web UI (bound to `127.0.0.1`) |
+| `WG_EASY_WEB_BIND_ADDRESS` | `127.0.0.1` | Host bind address for the web UI (`0.0.0.0` for internet access) |
+| `WG_EASY_WEB_PORT` | `51821` | Host port for the web UI |
 | `WG_EASY_WG_PORT` | `51820` | Host port for WireGuard UDP traffic (public) |
 | `LANG` | `en` | UI language |
 
@@ -63,6 +62,33 @@ wg-easy/
 
 `INIT_HOST` must match what clients can actually reach — use your server's public IP or a DNS name that resolves to it.
 
+### Remote access
+
+To open the web UI from outside the server, set in `.env`:
+
+```bash
+WG_EASY_WEB_BIND_ADDRESS=0.0.0.0
+```
+
+Then open `WG_EASY_WEB_PORT` (default `51821`) in your firewall and cloud security group.
+
+Test from a remote machine (replace `<server-ip>`):
+
+```bash
+curl -fsS http://<server-ip>:51821/
+```
+
+Use a strong `INIT_PASSWORD` — authentication is required, but the port is reachable from the internet. Prefer HTTPS via a reverse proxy (`INSECURE=false`) when exposing the UI publicly.
+
+### SSH tunnel (alternative)
+
+If the web UI stays on `127.0.0.1`:
+
+```bash
+ssh -L 51821:127.0.0.1:51821 user@your-server.example.com
+# then open http://127.0.0.1:51821 in a browser
+```
+
 ## Production deployment
 
 1. Copy `wg-easy/` to the server (e.g. `~/r/d/wg-easy`).
@@ -75,10 +101,9 @@ wg-easy/
 
 ### Web UI access
 
-The web UI port is bound to `127.0.0.1` only — it is not exposed to the public internet. Access it via:
-
-- **SSH tunnel** (simplest): `ssh -L 51821:127.0.0.1:51821 user@server`
-- **Reverse proxy** (recommended for team access): put Caddy, nginx, or Traefik in front of `127.0.0.1:51821` with HTTPS. Set `INSECURE=false` and configure the proxy to forward to the web UI port.
+- **Internet** (direct): set `WG_EASY_WEB_BIND_ADDRESS=0.0.0.0`, open TCP `WG_EASY_WEB_PORT` in the firewall. Use a strong password; set `INSECURE=false` and terminate TLS at a reverse proxy when possible.
+- **SSH tunnel**: keep the default `127.0.0.1` bind and use `ssh -L 51821:127.0.0.1:51821 user@server`.
+- **Reverse proxy** (recommended for team access): put Caddy, nginx, or Traefik in front of the web UI with HTTPS. Set `INSECURE=false` and forward to `127.0.0.1:51821` (or `wg-easy:<port>` on a shared Docker network).
 
 WireGuard UDP traffic is published on all interfaces — clients must reach this port directly.
 
@@ -115,6 +140,6 @@ docker compose exec wg-easy wg show
 ## Security notes
 
 - Use a strong `INIT_PASSWORD`; it grants full VPN administration.
-- Keep the web UI on `127.0.0.1` or behind HTTPS — do not expose it on `0.0.0.0` without TLS.
+- Keep the web UI on `127.0.0.1`, behind HTTPS, or restrict firewall access when using `WG_EASY_WEB_BIND_ADDRESS=0.0.0.0`.
 - Restrict who can create VPN clients; each client gets full network access through the tunnel.
 - Enable IP forwarding on the host if you route client traffic through the VPN (`net.ipv4.ip_forward=1` is set in the container; the host may also need it for NAT).
