@@ -36,8 +36,6 @@ jobs:
           }
           trap cleanup EXIT
 
-          docker network create infra 2>/dev/null || true
-
           ./scripts/generate-3proxy-cfg.sh
           docker compose up -d --wait
 
@@ -45,10 +43,10 @@ jobs:
           docker_socks_proxy="${PROXY_USER}:${PROXY_PASSWORD}@3proxy:1080"
           curl_retry=(--retry 3 --retry-delay 2 --retry-all-errors)
 
-          # Docker apps: connect via container name on infra network.
-          docker run --rm --network infra curlimages/curl:8.12.1 \
+          # Docker apps: connect via container name on the compose-created network.
+          docker run --rm --network 3proxy_default curlimages/curl:8.12.1 \
             -fsS "${curl_retry[@]}" -x "${http_proxy}" https://example.com/ | grep -q 'Example Domain'
-          docker run --rm --network infra curlimages/curl:8.12.1 \
+          docker run --rm --network 3proxy_default curlimages/curl:8.12.1 \
             -fsS "${curl_retry[@]}" --socks5 "${docker_socks_proxy}" https://example.com/ | grep -q 'Example Domain'
 
   postgres:
@@ -203,7 +201,6 @@ jobs:
         working-directory: reverse-proxy
         env:
           CADDY_BIND_ADDRESS: 127.0.0.1
-          PROXY_FORWARD_BIND_ADDRESS: 127.0.0.1
         run: docker compose config --quiet
 
       - name: Validate Caddyfile
