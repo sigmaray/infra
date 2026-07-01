@@ -21,6 +21,13 @@ jobs:
           PROXY_PASSWORD: ci-test-password
         run: docker compose config --quiet
 
+      - name: Validate docker compose (public bind)
+        working-directory: 3proxy
+        env:
+          PROXY_PASSWORD: ci-test-password
+          PROXY_BIND_ADDRESS: 0.0.0.0
+        run: docker compose config --quiet
+
       - name: Shellcheck
         run: shellcheck 3proxy/scripts/generate-3proxy-cfg.sh
 

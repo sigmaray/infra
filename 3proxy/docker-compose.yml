@@ -1,6 +1,7 @@
 # Shared HTTP/SOCKS proxy for production VPS.
 # Docker apps: join network 3proxy_default, connect to 3proxy:3128 (HTTP) or 3proxy:1080 (SOCKS5)
 # Host-native apps: connect to 127.0.0.1:${HTTP_PROXY_PORT:-3128} or 127.0.0.1:${SOCKS_PROXY_PORT:-1080}
+# Remote clients: set PROXY_BIND_ADDRESS=0.0.0.0 and open HTTP_PROXY_PORT / SOCKS_PROXY_PORT in the firewall
 #
 # First deploy:
 #   cp .env.example .env && $EDITOR .env
@@ -13,8 +14,8 @@ services:
     container_name: 3proxy
     restart: unless-stopped
     ports:
-      - "127.0.0.1:${HTTP_PROXY_PORT:-3128}:3128"
-      - "127.0.0.1:${SOCKS_PROXY_PORT:-1080}:1080"
+      - "${PROXY_BIND_ADDRESS:-127.0.0.1}:${HTTP_PROXY_PORT:-3128}:3128"
+      - "${PROXY_BIND_ADDRESS:-127.0.0.1}:${SOCKS_PROXY_PORT:-1080}:1080"
     volumes:
       - ./3proxy.cfg:/etc/3proxy/3proxy.cfg:ro
     healthcheck:
