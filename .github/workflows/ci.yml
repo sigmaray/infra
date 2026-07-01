@@ -57,10 +57,10 @@ jobs:
           curl -fsS "${curl_retry[@]}" -x "${http_proxy}" https://httpbin.org/ip | grep -q '"origin"'
           curl -fsS "${curl_retry[@]}" --socks5 "${socks_proxy}" https://httpbin.org/ip | grep -q '"origin"'
 
-          # Docker apps: connect via container name on 3proxy_default network.
-          docker run --rm --network 3proxy_default curlimages/curl:8.12.1 \
+          # Docker apps: connect via container name on infra network.
+          docker run --rm --network infra curlimages/curl:8.12.1 \
             -fsS "${curl_retry[@]}" -x "${docker_http_proxy}" https://httpbin.org/ip | grep -q '"origin"'
-          docker run --rm --network 3proxy_default curlimages/curl:8.12.1 \
+          docker run --rm --network infra curlimages/curl:8.12.1 \
             -fsS "${curl_retry[@]}" --socks5 "${docker_socks_proxy}" https://httpbin.org/ip | grep -q '"origin"'
 
   postgres:

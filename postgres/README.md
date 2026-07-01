@@ -24,7 +24,7 @@ The host port is bound to `127.0.0.1` only — PostgreSQL is not exposed to the 
 
 ### Docker apps on the same host (recommended)
 
-Join the `postgres_default` network created by this stack and connect to the `postgresql` container by name. This is the reliable pattern on Linux VPS.
+Join the `infra` network and connect to the `postgresql` container by name. This is the reliable pattern on Linux VPS.
 
 In the app's `docker-compose.yml`:
 
@@ -32,12 +32,12 @@ In the app's `docker-compose.yml`:
 services:
   app:
     networks:
-      - postgres
+      - infra
 
 networks:
-  postgres:
+  infra:
     external: true
-    name: postgres_default
+    name: infra
 ```
 
 Connection string (the `weather` database is created on first start):
@@ -128,7 +128,7 @@ docker compose exec postgres psql -U postgres
 2. Create `.env` with a production password.
 3. Run `docker compose up -d`.
 
-Deploy containerized applications on the `postgres_default` network with `DATABASE_URL` pointing at `postgresql:5432`. Host-native apps use `127.0.0.1:<POSTGRES_PORT>`.
+Deploy containerized applications on the `infra` network with `DATABASE_URL` pointing at `postgresql:5432`. Host-native apps use `127.0.0.1:<POSTGRES_PORT>`.
 
 ## Backups
 

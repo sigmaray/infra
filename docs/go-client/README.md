@@ -27,7 +27,7 @@ connected to database "weather"
 
 ## Connection
 
-The app joins the `postgres_default` Docker network and connects to the `postgresql` container by name:
+The app joins the `infra` Docker network and connects to the `postgresql` container by name:
 
 ```
 postgresql://postgres:<POSTGRES_PASSWORD>@postgresql:5432/weather

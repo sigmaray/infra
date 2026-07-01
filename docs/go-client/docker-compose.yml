@@ -11,9 +11,9 @@ services:
     environment:
       DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@postgresql:5432/weather
     networks:
-      - postgres
+      - infra
 
 networks:
-  postgres:
+  infra:
     external: true
-    name: postgres_default
+    name: infra

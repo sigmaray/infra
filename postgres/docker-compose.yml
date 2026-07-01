@@ -1,5 +1,5 @@
 # Shared PostgreSQL for production VPS.
-# Docker apps: join network postgres_default, connect to postgresql:5432
+# Docker apps: join network infra, connect to postgresql:5432
 # Host-native apps: connect to 127.0.0.1:${POSTGRES_PORT:-5432}
 #
 # First deploy:
@@ -32,6 +32,12 @@ services:
       timeout: 5s
       retries: 5
       start_period: 30s
+    networks:
+      - infra
+
+networks:
+  infra:
+    name: infra
 
 volumes:
   volume-postgres:
