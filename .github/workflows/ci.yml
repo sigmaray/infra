@@ -8,260 +8,30 @@ permissions:
   contents: read
 
 jobs:
-  proxy:
+  test:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        marker:
+          - proxy
+          - postgres
+          - wg_easy
+          - static_web
+          - reverse_proxy
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Validate docker compose
-        working-directory: 3proxy
-        env:
-          PROXY_PASSWORD: ci-test-password
-        run: docker compose config --quiet
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
 
-      - name: Shellcheck
-        run: shellcheck 3proxy/scripts/generate-3proxy-cfg.sh
+      - name: Install test dependencies
+        run: pip install -e ".[test]"
 
-      - name: Integration test
-        working-directory: 3proxy
-        env:
-          PROXY_USER: proxy
-          PROXY_PASSWORD: ci-test-password
-        run: |
-          set -euo pipefail
+      - name: Install shellcheck
+        run: sudo apt-get update && sudo apt-get install -y shellcheck
 
-          cleanup() {
-            docker compose down 2>/dev/null || true
-          }
-          trap cleanup EXIT
-
-          ./scripts/generate-3proxy-cfg.sh
-          docker compose up -d --wait
-
-          http_proxy="http://${PROXY_USER}:${PROXY_PASSWORD}@3proxy:3128"
-          docker_socks_proxy="${PROXY_USER}:${PROXY_PASSWORD}@3proxy:1080"
-          curl_retry=(--retry 3 --retry-delay 2 --retry-all-errors)
-
-          # Docker apps: connect via container name on the compose-created network.
-          docker run --rm --network 3proxy_default curlimages/curl:8.12.1 \
-            -fsS "${curl_retry[@]}" -x "${http_proxy}" https://example.com/ | grep -q 'Example Domain'
-          docker run --rm --network 3proxy_default curlimages/curl:8.12.1 \
-            -fsS "${curl_retry[@]}" --socks5 "${docker_socks_proxy}" https://example.com/ | grep -q 'Example Domain'
-
-  postgres:
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Validate docker compose
-        working-directory: postgres
-        env:
-          POSTGRES_PASSWORD: ci-test-password
-        run: docker compose config --quiet
-
-      - name: Validate sample Go client compose
-        working-directory: docs/go-client
-        env:
-          POSTGRES_PASSWORD: ci-test-password
-        run: docker compose config --quiet
-
-      - name: Shellcheck
-        run: |
-          shellcheck postgres/init/01-flask-weather.sh postgres/scripts/create-database.sh
-
-      - name: Bash syntax check
-        run: |
-          bash -n postgres/init/01-flask-weather.sh
-          bash -n postgres/scripts/create-database.sh
-
-      - name: Script permissions
-        run: |
-          test -x postgres/init/01-flask-weather.sh
-          test -x postgres/scripts/create-database.sh
-
-      - name: Integration test
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: ci-test-password
-          POSTGRES_PORT: 5432
-        run: |
-          cleanup() {
-            docker compose -f docs/go-client/docker-compose.yml down --rmi local 2>/dev/null || true
-            docker compose -f postgres/docker-compose.yml down -v 2>/dev/null || true
-          }
-          trap cleanup EXIT
-
-          docker network create infra 2>/dev/null || true
-
-          docker compose -f postgres/docker-compose.yml up -d --wait
-          docker compose -f postgres/docker-compose.yml exec -T postgres pg_isready -U postgres
-          docker compose -f postgres/docker-compose.yml exec -T postgres psql -U postgres -tAc \
-            "SELECT 1 FROM pg_database WHERE datname = 'weather'" | grep -qx 1
-
-          docker compose -f docs/go-client/docker-compose.yml up --build --abort-on-container-exit --exit-code-from app
-
-  wg-easy:
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Validate docker compose
-        working-directory: wg-easy
-        env:
-          INIT_HOST: 127.0.0.1
-          INIT_PASSWORD: ci-test-password
-        run: docker compose config --quiet
-
-      - name: Integration test
-        working-directory: wg-easy
-        env:
-          INIT_HOST: 127.0.0.1
-          INIT_USERNAME: admin
-          INIT_PASSWORD: ci-test-password
-          WG_EASY_WEB_PORT: 51821
-          WG_EASY_WG_PORT: 51820
-        run: |
-          set -euo pipefail
-
-          cleanup() {
-            docker compose down 2>/dev/null || true
-            sudo rm -rf data 2>/dev/null || rm -rf data 2>/dev/null || true
-          }
-          trap cleanup EXIT
-
-          docker network create infra 2>/dev/null || true
-          docker compose up -d --wait
-
-          curl -fsS --retry 5 --retry-delay 2 --retry-all-errors \
-            "http://127.0.0.1:${WG_EASY_WEB_PORT}/" >/dev/null
-
-          session_response="$(curl -fsS -X POST "http://127.0.0.1:${WG_EASY_WEB_PORT}/api/session" \
-            -H 'Content-Type: application/json' \
-            -d "{\"username\":\"${INIT_USERNAME}\",\"password\":\"${INIT_PASSWORD}\",\"remember\":false}")"
-          echo "${session_response}" | grep -q '"status":"success"'
-
-          docker compose exec -T wg-easy wg show | grep -q 'interface: wg0'
-          docker compose exec -T wg-easy wg show | grep -q 'listening port:'
-
-          data_dir="$(docker inspect --format \
-            '{{range .Mounts}}{{if eq .Destination "/etc/wireguard"}}{{.Source}}{{end}}{{end}}' \
-            wg-easy)"
-          test -d "${data_dir}"
-          echo "${data_dir}" | grep -q 'wg-easy/data'
-
-  static-web:
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Validate docker compose
-        working-directory: static-web
-        run: docker compose config --quiet
-
-      - name: Integration test
-        working-directory: static-web
-        env:
-          STATIC_WEB_PORT: 8080
-        run: |
-          set -euo pipefail
-
-          cleanup() {
-            docker compose down 2>/dev/null || true
-          }
-          trap cleanup EXIT
-
-          docker network create infra 2>/dev/null || true
-          cp public/index.html.example public/index.html
-          docker compose up -d --wait
-
-          curl -fsS --retry 5 --retry-delay 2 --retry-all-errors \
-            "http://127.0.0.1:${STATIC_WEB_PORT}/" | grep -q 'Static Web'
-
-          docker run --rm --network infra curlimages/curl:8.12.1 \
-            -fsS --retry 3 --retry-delay 2 --retry-all-errors \
-            http://static-web:80/ | grep -q 'Static Web'
-
-  reverse-proxy:
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Validate docker compose
-        working-directory: reverse-proxy
-        run: |
-          cp .env.example .env
-          docker compose config --quiet
-
-      - name: Validate docker compose (local bind)
-        working-directory: reverse-proxy
-        env:
-          CADDY_BIND_ADDRESS: 127.0.0.1
-        run: docker compose config --quiet
-
-      - name: Validate Caddyfile
-        working-directory: reverse-proxy
-        run: |
-          cp .env.example .env
-          cp Caddyfile.example Caddyfile
-          docker run --rm \
-            -v "$(pwd)/Caddyfile:/etc/caddy/Caddyfile:ro" \
-            --env-file .env \
-            caddy:2.10.0-alpine caddy validate --config /etc/caddy/Caddyfile
-
-      - name: Integration test
-        env:
-          PROXY_USER: proxy
-          PROXY_PASSWORD: ci-test-password
-          INIT_HOST: 127.0.0.1
-          INIT_USERNAME: admin
-          INIT_PASSWORD: ci-test-password
-          WG_EASY_WEB_PORT: 51821
-          WG_EASY_WG_PORT: 51820
-        run: |
-          set -euo pipefail
-
-          cleanup() {
-            docker compose -f reverse-proxy/docker-compose.yml down 2>/dev/null || true
-            docker compose -f static-web/docker-compose.yml down 2>/dev/null || true
-            docker compose -f wg-easy/docker-compose.yml down 2>/dev/null || true
-            docker compose -f 3proxy/docker-compose.yml down 2>/dev/null || true
-            sudo rm -rf wg-easy/data 2>/dev/null || rm -rf wg-easy/data 2>/dev/null || true
-          }
-          trap cleanup EXIT
-
-          docker network create infra 2>/dev/null || true
-
-          (
-            cd 3proxy
-            ./scripts/generate-3proxy-cfg.sh
-          )
-          docker compose -f 3proxy/docker-compose.yml up -d --wait
-
-          docker compose -f wg-easy/docker-compose.yml up -d --wait
-          cp static-web/public/index.html.example static-web/public/index.html
-          docker compose -f static-web/docker-compose.yml up -d --wait
-
-          cp reverse-proxy/.env.example reverse-proxy/.env
-          cp reverse-proxy/Caddyfile.example reverse-proxy/Caddyfile
-          docker compose -f reverse-proxy/docker-compose.yml up -d --wait
-
-          curl_retry=(--retry 5 --retry-delay 2 --retry-all-errors)
-          http_proxy="http://${PROXY_USER}:${PROXY_PASSWORD}@127.0.0.1:3128"
-          socks_proxy="${PROXY_USER}:${PROXY_PASSWORD}@127.0.0.1:1080"
-
-          curl -fsS "${curl_retry[@]}" -H 'Host: wg.infra.local' http://127.0.0.1/ >/dev/null
-          curl -fsS "${curl_retry[@]}" -H 'Host: static.infra.local' http://127.0.0.1/ | grep -q 'Static Web'
-
-          session_response="$(curl -fsS -X POST -H 'Host: wg.infra.local' \
-            "http://127.0.0.1/api/session" \
-            -H 'Content-Type: application/json' \
-            -d "{\"username\":\"${INIT_USERNAME}\",\"password\":\"${INIT_PASSWORD}\",\"remember\":false}")"
-          echo "${session_response}" | grep -q '"status":"success"'
-
-          curl -fsS "${curl_retry[@]}" -x "${http_proxy}" https://example.com/ | grep -q 'Example Domain'
-          curl -fsS "${curl_retry[@]}" --socks5 "${socks_proxy}" https://example.com/ | grep -q 'Example Domain'
+      - name: Run tests
+        run: pytest -m "${{ matrix.marker }}"
