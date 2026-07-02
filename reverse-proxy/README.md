@@ -9,6 +9,7 @@
 **Not proxied** (by design):
 
 - **postgres** — database protocol; stays on `127.0.0.1` only inside the postgres stack
+- **redis** — cache protocol; stays on `127.0.0.1` only inside the redis stack
 - **3proxy** — HTTP CONNECT and SOCKS5 are not HTTP routes; expose them from [`../3proxy`](../3proxy) directly.
 
 ## Quick start

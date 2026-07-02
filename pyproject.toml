@@ -23,6 +23,7 @@ pythonpath = ["tests"]
 markers = [
     "proxy: 3proxy stack tests",
     "postgres: PostgreSQL stack tests",
+    "redis: Redis stack tests",
     "wg_easy: wg-easy stack tests",
     "static_web: static-web stack tests",
     "freshrss: FreshRSS stack tests",

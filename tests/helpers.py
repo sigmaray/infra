@@ -22,6 +22,8 @@ CI_ENV: dict[str, str] = {
     "STATIC_WEB_PORT": "8080",
     "FRESHRSS_PORT": "8081",
     "FRESHRSS_ADMIN_PASSWORD": "ci-test-password",
+    "REDIS_PASSWORD": "ci-test-password",
+    "REDIS_PORT": "6380",
     "CADDY_BIND_ADDRESS": "127.0.0.1",
 }
 

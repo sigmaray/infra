@@ -16,6 +16,7 @@ jobs:
         marker:
           - proxy
           - postgres
+          - redis
           - wg_easy
           - static_web
           - freshrss

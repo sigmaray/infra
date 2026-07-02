@@ -1,0 +1,46 @@
+# Shared Redis for production VPS.
+# Docker apps: join network infra, connect to redis:6379
+# Host-native apps: connect to 127.0.0.1:${REDIS_PORT:-6379}
+#
+# First deploy:
+#   cp .env.example .env && $EDITOR .env
+#   docker compose up -d
+#
+# Give each project its own logical database (0–15) or key prefix — see README.md.
+
+services:
+  redis:
+    image: redis:7.4.2-alpine
+    container_name: redis
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${REDIS_PORT:-6379}:6379"
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?Set REDIS_PASSWORD in .env}
+    command:
+      - sh
+      - -c
+      - exec redis-server /usr/local/etc/redis/redis.conf --requirepass "$$REDIS_PASSWORD"
+    volumes:
+      - volume-redis:/data
+      - ./redis.conf:/usr/local/etc/redis/redis.conf:ro
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "redis-cli -a \"$$REDIS_PASSWORD\" ping | grep -q PONG",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - infra
+
+networks:
+  infra:
+    external: true
+    name: infra
+
+volumes:
+  volume-redis:
