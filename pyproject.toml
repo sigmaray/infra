@@ -25,6 +25,7 @@ markers = [
     "postgres: PostgreSQL stack tests",
     "wg_easy: wg-easy stack tests",
     "static_web: static-web stack tests",
+    "freshrss: FreshRSS stack tests",
     "reverse_proxy: reverse-proxy stack tests",
     "integration: tests that start Docker containers",
 ]

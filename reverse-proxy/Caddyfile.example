@@ -5,3 +5,7 @@ http://{$WG_EASY_HOST:wg.localhost}, http://{$WG_EASY_ALT_HOST:wg.infra.local} {
 http://{$STATIC_WEB_HOST:static.localhost}, http://{$STATIC_WEB_ALT_HOST:static.infra.local} {
 	reverse_proxy static-web:80
 }
+
+http://{$FRESHRSS_HOST:freshrss.localhost}, http://{$FRESHRSS_ALT_HOST:freshrss.infra.local} {
+	reverse_proxy freshrss:80
+}

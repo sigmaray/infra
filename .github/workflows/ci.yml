@@ -18,6 +18,7 @@ jobs:
           - postgres
           - wg_easy
           - static_web
+          - freshrss
           - reverse_proxy
 
     steps:

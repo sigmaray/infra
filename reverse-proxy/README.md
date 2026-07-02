@@ -4,7 +4,7 @@
 
 | Component | Container | Host ports | Backend |
 |-----------|-----------|------------|---------|
-| Caddy (HTTP) | `reverse-proxy` | `80` | `wg-easy:51821`, `static-web:80` by hostname |
+| Caddy (HTTP) | `reverse-proxy` | `80` | `wg-easy:51821`, `static-web:80`, `freshrss:80` by hostname |
 
 **Not proxied** (by design):
 
@@ -46,6 +46,7 @@ curl -fsS -H 'Host: wg.infra.local' http://127.0.0.1/
 # with /etc/hosts or *.localhost resolver
 curl -fsS http://wg.localhost/
 curl -fsS http://static.localhost/
+curl -fsS http://freshrss.localhost/
 ```
 
 ## Environment variables
@@ -57,6 +58,8 @@ curl -fsS http://static.localhost/
 | `WG_EASY_WEB_PORT` | `51821` | wg-easy container port on `infra` network |
 | `STATIC_WEB_HOST` | `static.localhost` | Primary hostname for static file web server |
 | `STATIC_WEB_ALT_HOST` | `static.infra.local` | Alternate hostname for static web |
+| `FRESHRSS_HOST` | `freshrss.localhost` | Primary hostname for FreshRSS |
+| `FRESHRSS_ALT_HOST` | `freshrss.infra.local` | Alternate hostname for FreshRSS |
 | `CADDY_HTTP_PORT` | `80` | Host port for Caddy HTTP |
 | `CADDY_BIND_ADDRESS` | `0.0.0.0` | Bind for Caddy (`127.0.0.1` for local only) |
 
@@ -85,6 +88,11 @@ reverse-proxy/
 
 1. **Via Caddy (recommended):** set `STATIC_WEB_HOST=static.example.com`, point DNS to the server. Keep `STATIC_WEB_BIND_ADDRESS=127.0.0.1` in static-web.
 2. **Direct:** set `STATIC_WEB_BIND_ADDRESS=0.0.0.0` and open TCP `8080` in the firewall.
+
+### freshrss
+
+1. **Via Caddy (recommended):** set `FRESHRSS_HOST=freshrss.example.com`, point DNS to the server. Keep `FRESHRSS_BIND_ADDRESS=127.0.0.1` in freshrss.
+2. **Direct:** set `FRESHRSS_BIND_ADDRESS=0.0.0.0` and open TCP `8081` in the firewall.
 
 ### 3proxy (HTTP + SOCKS5)
 

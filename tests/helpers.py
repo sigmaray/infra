@@ -20,6 +20,8 @@ CI_ENV: dict[str, str] = {
     "WG_EASY_WEB_PORT": "51821",
     "WG_EASY_WG_PORT": "51820",
     "STATIC_WEB_PORT": "8080",
+    "FRESHRSS_PORT": "8081",
+    "FRESHRSS_ADMIN_PASSWORD": "ci-test-password",
     "CADDY_BIND_ADDRESS": "127.0.0.1",
 }
 
@@ -71,4 +73,16 @@ def remove_path(path: Path) -> None:
         else:
             path.unlink()
     except PermissionError:
-        run("sudo", "rm", "-rf", str(path), check=False)
+        parent = path.parent
+        run(
+            "docker",
+            "run",
+            "--rm",
+            "-v",
+            f"{parent}:/target",
+            "alpine:3.21",
+            "sh",
+            "-c",
+            f"rm -rf /target/{path.name}",
+            check=False,
+        )
