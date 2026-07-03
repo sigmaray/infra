@@ -9,7 +9,7 @@
 # First deploy:
 #   cp .env.example .env && $EDITOR .env
 #   docker compose up -d
-#   open the web UI to create the admin account
+#   open the web UI and sign in with BUGSINK_CREATE_SUPERUSER credentials
 
 services:
   bugsink:
@@ -25,6 +25,7 @@ services:
     environment:
       PORT: 8000
       SECRET_KEY: ${BUGSINK_SECRET_KEY:?Set BUGSINK_SECRET_KEY in .env}
+      CREATE_SUPERUSER: ${BUGSINK_CREATE_SUPERUSER:?Set BUGSINK_CREATE_SUPERUSER in .env}
       DATABASE_URL: ${BUGSINK_DATABASE_URL:?Set BUGSINK_DATABASE_URL in .env}
     healthcheck:
       test:

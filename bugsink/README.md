@@ -29,11 +29,11 @@ Deploy Bugsink:
 ```bash
 cd bugsink
 cp .env.example .env
-# set BUGSINK_SECRET_KEY and BUGSINK_DATABASE_URL
+# set BUGSINK_SECRET_KEY, BUGSINK_CREATE_SUPERUSER, and BUGSINK_DATABASE_URL
 docker compose up -d
 ```
 
-Open `http://127.0.0.1:8000/` and create the admin account in the web UI.
+Open `http://127.0.0.1:8000/` and sign in with credentials from `BUGSINK_CREATE_SUPERUSER` (format `email:password`).
 
 Verify:
 
@@ -42,7 +42,9 @@ docker compose ps
 curl -fsS http://127.0.0.1:8000/health/ready
 ```
 
-Or create the first admin from the CLI:
+After the admin account works, remove `BUGSINK_CREATE_SUPERUSER` from `.env` to avoid resetting credentials on redeploy.
+
+Alternative — create admin manually:
 
 ```bash
 docker compose exec bugsink python manage.py createsuperuser
@@ -55,6 +57,7 @@ docker compose exec bugsink python manage.py createsuperuser
 | `BUGSINK_BIND_ADDRESS` | `127.0.0.1` | Host bind address (`0.0.0.0` for internet access) |
 | `BUGSINK_PORT` | `8000` | Host port for direct access (maps to container port `8000`) |
 | `BUGSINK_SECRET_KEY` | — | Django secret key, at least 50 characters (required) |
+| `BUGSINK_CREATE_SUPERUSER` | — | Initial admin `email:password` (required on first start) |
 | `BUGSINK_DATABASE_URL` | — | PostgreSQL connection string (required) |
 
 Public URL, proxy settings, teams, and projects are configured in the Bugsink web UI.
