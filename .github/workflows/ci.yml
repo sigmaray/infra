@@ -20,6 +20,7 @@ jobs:
           - wg_easy
           - static_web
           - freshrss
+          - uptime_kuma
           - reverse_proxy
 
     steps:

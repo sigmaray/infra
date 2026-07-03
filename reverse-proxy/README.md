@@ -4,7 +4,7 @@
 
 | Component | Container | Host ports | Backend |
 |-----------|-----------|------------|---------|
-| Caddy (HTTP) | `reverse-proxy` | `80` | `wg-easy:51821`, `static-web:80`, `freshrss:80` by hostname |
+| Caddy (HTTP) | `reverse-proxy` | `80` | `wg-easy:51821`, `static-web:80`, `freshrss:80`, `uptime-kuma:3001` by hostname |
 
 **Not proxied** (by design):
 
@@ -48,6 +48,7 @@ curl -fsS -H 'Host: wg.infra.local' http://127.0.0.1/
 curl -fsS http://wg.localhost/
 curl -fsS http://static.localhost/
 curl -fsS http://freshrss.localhost/
+curl -fsS http://status.localhost/
 ```
 
 ## Environment variables
@@ -61,6 +62,8 @@ curl -fsS http://freshrss.localhost/
 | `STATIC_WEB_ALT_HOST` | `static.infra.local` | Alternate hostname for static web |
 | `FRESHRSS_HOST` | `freshrss.localhost` | Primary hostname for FreshRSS |
 | `FRESHRSS_ALT_HOST` | `freshrss.infra.local` | Alternate hostname for FreshRSS |
+| `UPTIME_KUMA_HOST` | `status.localhost` | Primary hostname for Uptime Kuma |
+| `UPTIME_KUMA_ALT_HOST` | `status.infra.local` | Alternate hostname for Uptime Kuma |
 | `CADDY_HTTP_PORT` | `80` | Host port for Caddy HTTP |
 | `CADDY_BIND_ADDRESS` | `0.0.0.0` | Bind for Caddy (`127.0.0.1` for local only) |
 
@@ -94,6 +97,11 @@ reverse-proxy/
 
 1. **Via Caddy (recommended):** set `FRESHRSS_HOST=freshrss.example.com`, point DNS to the server. Keep `FRESHRSS_BIND_ADDRESS=127.0.0.1` in freshrss.
 2. **Direct:** set `FRESHRSS_BIND_ADDRESS=0.0.0.0` and open TCP `8081` in the firewall.
+
+### uptime-kuma
+
+1. **Via Caddy (recommended):** set `UPTIME_KUMA_HOST=status.example.com`, point DNS to the server. Keep `UPTIME_KUMA_BIND_ADDRESS=127.0.0.1` in uptime-kuma.
+2. **Direct:** set `UPTIME_KUMA_BIND_ADDRESS=0.0.0.0` and open TCP `8082` in the firewall.
 
 ### 3proxy (HTTP + SOCKS5)
 

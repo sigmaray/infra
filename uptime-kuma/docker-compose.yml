@@ -1,0 +1,40 @@
+# Uptime Kuma — self-hosted uptime monitoring.
+# Docker apps and Caddy reach it at uptime-kuma:3001 on the infra network.
+# Host-native access: http://127.0.0.1:${UPTIME_KUMA_PORT:-8082} (see README).
+# Put ../reverse-proxy/ (Caddy) in front for hostname-based access in production.
+#
+# First deploy:
+#   cp .env.example .env && $EDITOR .env
+#   docker compose up -d
+#   open the web UI to create the admin account
+
+services:
+  uptime-kuma:
+    image: louislam/uptime-kuma:2.0.2
+    container_name: uptime-kuma
+    hostname: uptime-kuma
+    restart: unless-stopped
+    logging:
+      options:
+        max-size: 10m
+    ports:
+      - "${UPTIME_KUMA_BIND_ADDRESS:-127.0.0.1}:${UPTIME_KUMA_PORT:-8082}:3001"
+    volumes:
+      - ./data:/app/data
+    environment:
+      TZ: ${TZ:-Europe/Moscow}
+      # Set to 1 only when embedding the dashboard in an iframe behind a trusted proxy.
+      UPTIME_KUMA_DISABLE_FRAME_SAMEORIGIN: ${UPTIME_KUMA_DISABLE_FRAME_SAMEORIGIN:-0}
+    healthcheck:
+      test: ["CMD", "extra/healthcheck"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    networks:
+      - infra
+
+networks:
+  infra:
+    external: true
+    name: infra
