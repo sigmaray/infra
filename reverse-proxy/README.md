@@ -101,7 +101,7 @@ reverse-proxy/
 ### uptime-kuma
 
 1. **Via Caddy (recommended):** set `UPTIME_KUMA_HOST=status.example.com`, point DNS to the server. Keep `UPTIME_KUMA_BIND_ADDRESS=127.0.0.1` in uptime-kuma.
-2. **Direct:** set `UPTIME_KUMA_BIND_ADDRESS=0.0.0.0` and open TCP `8082` in the firewall.
+2. **Direct:** set `UPTIME_KUMA_BIND_ADDRESS=0.0.0.0` and open TCP `8083` in the firewall.
 
 ### 3proxy (HTTP + SOCKS5)
 

@@ -5,7 +5,7 @@
 | Access | URL |
 |--------|-----|
 | Via Caddy | `http://<UPTIME_KUMA_HOST>/` (see [reverse-proxy](../reverse-proxy/README.md)) |
-| Direct (host) | `http://127.0.0.1:8082/` (default bind) |
+| Direct (host) | `http://127.0.0.1:8083/` (default bind) |
 | Docker apps | `http://uptime-kuma:3001/` |
 
 ## Quick start
@@ -18,13 +18,13 @@ cp .env.example .env
 docker compose up -d
 ```
 
-Open `http://127.0.0.1:8082/` and create the admin account on first visit.
+Open `http://127.0.0.1:8083/` and create the admin account on first visit.
 
 Verify:
 
 ```bash
 docker compose ps
-curl -fsS http://127.0.0.1:8082/
+curl -fsS http://127.0.0.1:8083/
 ```
 
 ## Environment variables
@@ -32,7 +32,7 @@ curl -fsS http://127.0.0.1:8082/
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `UPTIME_KUMA_BIND_ADDRESS` | `127.0.0.1` | Host bind address (`0.0.0.0` for internet access) |
-| `UPTIME_KUMA_PORT` | `8082` | Host port for direct access (maps to container port `3001`) |
+| `UPTIME_KUMA_PORT` | `8083` | Host port for direct access (maps to container port `3001`) |
 | `TZ` | `Europe/Moscow` | Container timezone |
 | `UPTIME_KUMA_DISABLE_FRAME_SAMEORIGIN` | `0` | Set to `1` to allow iframe embedding |
 
@@ -92,5 +92,5 @@ Restore by stopping the stack, replacing `data/`, and starting again.
 
 ## Notes
 
-- Default port `8082` avoids clashing with [static-web](../static-web/) on `8080` and [freshrss](../freshrss/) on `8081`.
+- Default port `8083` avoids clashing with [static-web](../static-web/) on `8080` and [freshrss](../freshrss/) on `8081`.
 - To monitor Docker containers on the same host, add a read-only Docker socket mount in `docker-compose.yml` and configure the Docker monitor type in the UI. This increases attack surface — enable only if needed.
