@@ -25,6 +25,7 @@ CI_ENV: dict[str, str] = {
     "REDIS_PASSWORD": "ci-test-password",
     "REDIS_PORT": "6380",
     "UPTIME_KUMA_PORT": "18083",
+    "PORTAINER_HTTPS_PORT": "19443",
     "CADDY_BIND_ADDRESS": "127.0.0.1",
 }
 

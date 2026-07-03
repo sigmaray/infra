@@ -4,7 +4,7 @@
 
 | Component | Container | Host ports | Backend |
 |-----------|-----------|------------|---------|
-| Caddy (HTTP) | `reverse-proxy` | `80` | `wg-easy:51821`, `static-web:80`, `freshrss:80`, `uptime-kuma:3001` by hostname |
+| Caddy (HTTP) | `reverse-proxy` | `80` | `wg-easy:51821`, `static-web:80`, `freshrss:80`, `uptime-kuma:3001`, `portainer:9000` by hostname |
 
 **Not proxied** (by design):
 
@@ -49,6 +49,7 @@ curl -fsS http://wg.localhost/
 curl -fsS http://static.localhost/
 curl -fsS http://freshrss.localhost/
 curl -fsS http://status.localhost/
+curl -fsS http://portainer.localhost/api/status
 ```
 
 ## Environment variables
@@ -64,6 +65,8 @@ curl -fsS http://status.localhost/
 | `FRESHRSS_ALT_HOST` | `freshrss.infra.local` | Alternate hostname for FreshRSS |
 | `UPTIME_KUMA_HOST` | `status.localhost` | Primary hostname for Uptime Kuma |
 | `UPTIME_KUMA_ALT_HOST` | `status.infra.local` | Alternate hostname for Uptime Kuma |
+| `PORTAINER_HOST` | `portainer.localhost` | Primary hostname for Portainer |
+| `PORTAINER_ALT_HOST` | `portainer.infra.local` | Alternate hostname for Portainer |
 | `CADDY_HTTP_PORT` | `80` | Host port for Caddy HTTP |
 | `CADDY_BIND_ADDRESS` | `0.0.0.0` | Bind for Caddy (`127.0.0.1` for local only) |
 
@@ -102,6 +105,11 @@ reverse-proxy/
 
 1. **Via Caddy (recommended):** set `UPTIME_KUMA_HOST=status.example.com`, point DNS to the server. Keep `UPTIME_KUMA_BIND_ADDRESS=127.0.0.1` in uptime-kuma.
 2. **Direct:** set `UPTIME_KUMA_BIND_ADDRESS=0.0.0.0` and open TCP `8083` in the firewall.
+
+### portainer
+
+1. **Via Caddy (recommended):** set `PORTAINER_HOST=portainer.example.com`, point DNS to the server. Keep `PORTAINER_BIND_ADDRESS=127.0.0.1` in portainer.
+2. **Direct:** set `PORTAINER_BIND_ADDRESS=0.0.0.0` and open TCP `9443` in the firewall. Use HTTPS (self-signed by default).
 
 ### 3proxy (HTTP + SOCKS5)
 
@@ -156,4 +164,5 @@ cd ~/r/d/reverse-proxy && cp Caddyfile.example Caddyfile && docker compose up -d
 - Keep wg-easy web UI on `127.0.0.1` when using Caddy — only reverse-proxy should be internet-facing on port 80.
 - Restrict proxy ports (`3128`, `1080`) in the 3proxy stack/firewall; require strong `PROXY_PASSWORD`.
 - postgres is not exposed through this stack.
+- portainer has full Docker socket access — restrict UI access and prefer Caddy with authentication upstream when possible.
 - For HTTPS in production, terminate TLS at an upstream load balancer or extend `Caddyfile` with automatic HTTPS (`https://` site blocks).

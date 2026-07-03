@@ -28,6 +28,7 @@ markers = [
     "static_web: static-web stack tests",
     "freshrss: FreshRSS stack tests",
     "uptime_kuma: Uptime Kuma stack tests",
+    "portainer: Portainer stack tests",
     "reverse_proxy: reverse-proxy stack tests",
     "integration: tests that start Docker containers",
 ]

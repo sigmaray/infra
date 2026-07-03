@@ -21,6 +21,7 @@ jobs:
           - static_web
           - freshrss
           - uptime_kuma
+          - portainer
           - reverse_proxy
 
     steps:

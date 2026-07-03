@@ -13,3 +13,7 @@ http://{$FRESHRSS_HOST:freshrss.localhost}, http://{$FRESHRSS_ALT_HOST:freshrss.
 http://{$UPTIME_KUMA_HOST:status.localhost}, http://{$UPTIME_KUMA_ALT_HOST:status.infra.local} {
 	reverse_proxy uptime-kuma:3001
 }
+
+http://{$PORTAINER_HOST:portainer.localhost}, http://{$PORTAINER_ALT_HOST:portainer.infra.local} {
+	reverse_proxy portainer:9000
+}
