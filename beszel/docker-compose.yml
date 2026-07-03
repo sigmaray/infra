@@ -1,0 +1,39 @@
+# Beszel — self-hosted server monitoring hub.
+# Docker apps and Caddy reach it at beszel:8090 on the infra network.
+# Host-native access: http://127.0.0.1:${BESZEL_PORT:-8090} (see README).
+# Put ../reverse-proxy/ (Caddy) in front for hostname-based access in production.
+#
+# First deploy:
+#   cp .env.example .env && $EDITOR .env
+#   docker compose up -d
+#   open the web UI to create the admin account and add systems
+
+services:
+  beszel:
+    image: henrygd/beszel:0.18.7
+    container_name: beszel
+    hostname: beszel
+    restart: unless-stopped
+    logging:
+      options:
+        max-size: 10m
+    ports:
+      - "${BESZEL_BIND_ADDRESS:-127.0.0.1}:${BESZEL_PORT:-8090}:8090"
+    volumes:
+      - ./data:/beszel_data
+    environment:
+      TZ: ${TZ:-Europe/Moscow}
+      APP_URL: ${BESZEL_APP_URL:-http://127.0.0.1:8090}
+    healthcheck:
+      test: ["CMD", "/beszel", "health", "--url", "http://localhost:8090"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - infra
+
+networks:
+  infra:
+    external: true
+    name: infra

@@ -14,6 +14,10 @@ http://{$UPTIME_KUMA_HOST:status.localhost}, http://{$UPTIME_KUMA_ALT_HOST:statu
 	reverse_proxy uptime-kuma:3001
 }
 
+http://{$BESZEL_HOST:beszel.localhost}, http://{$BESZEL_ALT_HOST:beszel.infra.local} {
+	reverse_proxy beszel:8090
+}
+
 http://{$PORTAINER_HOST:portainer.localhost}, http://{$PORTAINER_ALT_HOST:portainer.infra.local} {
 	reverse_proxy portainer:9000
 }

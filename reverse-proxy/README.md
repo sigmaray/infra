@@ -4,7 +4,7 @@
 
 | Component | Container | Host ports | Backend |
 |-----------|-----------|------------|---------|
-| Caddy (HTTP) | `reverse-proxy` | `80` | `wg-easy:51821`, `static-web:80`, `freshrss:80`, `uptime-kuma:3001`, `portainer:9000` by hostname |
+| Caddy (HTTP) | `reverse-proxy` | `80` | `wg-easy:51821`, `static-web:80`, `freshrss:80`, `uptime-kuma:3001`, `beszel:8090`, `portainer:9000` by hostname |
 
 **Not proxied** (by design):
 
@@ -49,6 +49,7 @@ curl -fsS http://wg.localhost/
 curl -fsS http://static.localhost/
 curl -fsS http://freshrss.localhost/
 curl -fsS http://status.localhost/
+curl -fsS http://beszel.localhost/
 curl -fsS http://portainer.localhost/api/status
 ```
 
@@ -65,6 +66,8 @@ curl -fsS http://portainer.localhost/api/status
 | `FRESHRSS_ALT_HOST` | `freshrss.infra.local` | Alternate hostname for FreshRSS |
 | `UPTIME_KUMA_HOST` | `status.localhost` | Primary hostname for Uptime Kuma |
 | `UPTIME_KUMA_ALT_HOST` | `status.infra.local` | Alternate hostname for Uptime Kuma |
+| `BESZEL_HOST` | `beszel.localhost` | Primary hostname for Beszel |
+| `BESZEL_ALT_HOST` | `beszel.infra.local` | Alternate hostname for Beszel |
 | `PORTAINER_HOST` | `portainer.localhost` | Primary hostname for Portainer |
 | `PORTAINER_ALT_HOST` | `portainer.infra.local` | Alternate hostname for Portainer |
 | `CADDY_HTTP_PORT` | `80` | Host port for Caddy HTTP |
@@ -105,6 +108,11 @@ reverse-proxy/
 
 1. **Via Caddy (recommended):** set `UPTIME_KUMA_HOST=status.example.com`, point DNS to the server. Keep `UPTIME_KUMA_BIND_ADDRESS=127.0.0.1` in uptime-kuma.
 2. **Direct:** set `UPTIME_KUMA_BIND_ADDRESS=0.0.0.0` and open TCP `8083` in the firewall.
+
+### beszel
+
+1. **Via Caddy (recommended):** set `BESZEL_HOST=beszel.example.com`, point DNS to the server. Keep `BESZEL_BIND_ADDRESS=127.0.0.1` in beszel and set `BESZEL_APP_URL=https://beszel.example.com`.
+2. **Direct:** set `BESZEL_BIND_ADDRESS=0.0.0.0` and open TCP `8090` in the firewall.
 
 ### portainer
 
