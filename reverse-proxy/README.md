@@ -4,7 +4,7 @@
 
 | Component | Container | Host ports | Backend |
 |-----------|-----------|------------|---------|
-| Caddy (HTTP) | `reverse-proxy` | `80` | `wg-easy:51821`, `static-web:80`, `freshrss:80`, `uptime-kuma:3001`, `beszel:8090`, `portainer:9000`, `bugsink:8000` by hostname |
+| Caddy (HTTP + HTTPS) | `reverse-proxy` | `80`, `443` | `wg-easy:51821`, `static-web:80`, `freshrss:80`, `uptime-kuma:3001`, `beszel:8090`, `portainer:9000`, `bugsink:8000` by hostname |
 
 **Not proxied** (by design):
 
@@ -44,14 +44,14 @@ docker compose logs -f caddy
 # local (Host header required when not using *.localhost DNS)
 curl -fsS -H 'Host: wg.infra.local' http://127.0.0.1/
 
-# with /etc/hosts or *.localhost resolver
-curl -fsS http://wg.localhost/
-curl -fsS http://static.localhost/
-curl -fsS http://freshrss.localhost/
-curl -fsS http://status.localhost/
-curl -fsS http://beszel.localhost/
-curl -fsS http://portainer.localhost/api/status
-curl -fsS http://bugsink.localhost/health/ready
+# local (*.localhost — internal CA; use -k with curl)
+curl -fsSk https://wg.localhost/
+curl -fsSk https://static.localhost/
+curl -fsSk https://freshrss.localhost/
+curl -fsSk https://status.localhost/
+curl -fsSk https://beszel.localhost/
+curl -fsSk https://portainer.localhost/api/status
+curl -fsSk https://bugsink.localhost/health/ready
 ```
 
 ## Environment variables
@@ -74,9 +74,15 @@ curl -fsS http://bugsink.localhost/health/ready
 | `BUGSINK_HOST` | `bugsink.localhost` | Primary hostname for Bugsink |
 | `BUGSINK_ALT_HOST` | `bugsink.infra.local` | Alternate hostname for Bugsink |
 | `CADDY_HTTP_PORT` | `80` | Host port for Caddy HTTP |
+| `CADDY_HTTPS_PORT` | `443` | Host port for Caddy HTTPS |
+| `CADDY_ACME_EMAIL` | _(empty)_ | Contact email for Let's Encrypt (recommended in production) |
 | `CADDY_BIND_ADDRESS` | `0.0.0.0` | Bind for Caddy (`127.0.0.1` for local only) |
 
 Caddy reads hostnames from `.env` via `env_file` and substitutes variables in `Caddyfile`. Copy `Caddyfile.example` to `Caddyfile` and edit it for your domains and services.
+
+Primary hostnames (`WG_EASY_HOST`, etc.) get automatic HTTPS: Let's Encrypt for public domains, Caddy's internal CA for `*.localhost`. Alternate hostnames (`*_ALT_HOST`, default `*.infra.local`) stay HTTP-only so `curl -H 'Host: …' http://127.0.0.1/` keeps working without TLS.
+
+For Let's Encrypt expiry notifications, uncomment the global `email` block at the top of `Caddyfile` and set `CADDY_ACME_EMAIL` in `.env`.
 
 ## Layout
 
@@ -86,14 +92,16 @@ reverse-proxy/
 ├── Caddyfile.example
 ├── Caddyfile                    # copy from example, gitignored
 ├── .env.example
-└── .env                         # gitignored
+├── .env                         # gitignored
+├── data/                        # TLS certificates (gitignored)
+└── config/                      # Caddy autosave config (gitignored)
 ```
 
 ## Access patterns
 
 ### wg-easy web UI
 
-1. **Via Caddy (recommended):** set `WG_EASY_HOST=wg.example.com`, point DNS to the server, open TCP `80`. Keep `WG_EASY_WEB_BIND_ADDRESS=127.0.0.1` in wg-easy.
+1. **Via Caddy (recommended):** set `WG_EASY_HOST=wg.example.com`, point DNS to the server, open TCP `80` and `443`. Keep `WG_EASY_WEB_BIND_ADDRESS=127.0.0.1` in wg-easy and set `INSECURE=false`.
 2. **Direct:** set `WG_EASY_WEB_BIND_ADDRESS=0.0.0.0` and open TCP `51821` in the firewall.
 3. **SSH tunnel:** keep default `127.0.0.1` bind and use `ssh -L`.
 
@@ -154,9 +162,10 @@ docker compose down
 2. Ensure `infra` network exists (`postgres/` or `3proxy/` running, or `docker network create infra`).
 3. Create `.env` with production hostnames (`WG_EASY_HOST=wg.example.com`).
 4. Copy and edit `Caddyfile` (`cp Caddyfile.example Caddyfile`).
-5. Open TCP `80` in the firewall.
+5. Open TCP `80` and `443` in the firewall.
 6. Point `WG_EASY_HOST` DNS at the server.
-7. Run `docker compose up -d`.
+7. Set `CADDY_ACME_EMAIL` in `.env` (recommended).
+8. Run `docker compose up -d`.
 
 Recommended startup order:
 
@@ -177,8 +186,8 @@ cd ~/r/d/reverse-proxy && cp Caddyfile.example Caddyfile && docker compose up -d
 
 ## Security notes
 
-- Keep wg-easy web UI on `127.0.0.1` when using Caddy — only reverse-proxy should be internet-facing on port 80.
+- Keep wg-easy web UI on `127.0.0.1` when using Caddy — only reverse-proxy should be internet-facing on ports `80` and `443`.
 - Restrict proxy ports (`3128`, `1080`) in the 3proxy stack/firewall; require strong `PROXY_PASSWORD`.
 - postgres is not exposed through this stack.
 - portainer has full Docker socket access — restrict UI access and prefer Caddy with authentication upstream when possible.
-- For HTTPS in production, terminate TLS at an upstream load balancer or extend `Caddyfile` with automatic HTTPS (`https://` site blocks).
+- Caddy persists TLS certificates in `data/`; do not delete it in production unless you intend to re-issue certs.

@@ -1,27 +1,92 @@
-http://{$WG_EASY_HOST:wg.localhost}, http://{$WG_EASY_ALT_HOST:wg.infra.local} {
+# Automatic HTTPS for primary hostnames (Let's Encrypt in production,
+# internal CA for *.localhost). Alternate hostnames stay HTTP-only for
+# local Host-header access (curl -H 'Host: …' http://127.0.0.1/).
+#
+# Optional global options (uncomment for production):
+# {
+# 	email {$CADDY_ACME_EMAIL}
+# }
+
+(wg_easy) {
 	reverse_proxy wg-easy:{$WG_EASY_WEB_PORT:51821}
 }
 
-http://{$STATIC_WEB_HOST:static.localhost}, http://{$STATIC_WEB_ALT_HOST:static.infra.local} {
+{$WG_EASY_HOST:wg.localhost} {
+	import wg_easy
+}
+
+http://{$WG_EASY_ALT_HOST:wg.infra.local} {
+	import wg_easy
+}
+
+(static_web) {
 	reverse_proxy static-web:80
 }
 
-http://{$FRESHRSS_HOST:freshrss.localhost}, http://{$FRESHRSS_ALT_HOST:freshrss.infra.local} {
+{$STATIC_WEB_HOST:static.localhost} {
+	import static_web
+}
+
+http://{$STATIC_WEB_ALT_HOST:static.infra.local} {
+	import static_web
+}
+
+(freshrss) {
 	reverse_proxy freshrss:80
 }
 
-http://{$UPTIME_KUMA_HOST:status.localhost}, http://{$UPTIME_KUMA_ALT_HOST:status.infra.local} {
+{$FRESHRSS_HOST:freshrss.localhost} {
+	import freshrss
+}
+
+http://{$FRESHRSS_ALT_HOST:freshrss.infra.local} {
+	import freshrss
+}
+
+(uptime_kuma) {
 	reverse_proxy uptime-kuma:3001
 }
 
-http://{$BESZEL_HOST:beszel.localhost}, http://{$BESZEL_ALT_HOST:beszel.infra.local} {
+{$UPTIME_KUMA_HOST:status.localhost} {
+	import uptime_kuma
+}
+
+http://{$UPTIME_KUMA_ALT_HOST:status.infra.local} {
+	import uptime_kuma
+}
+
+(beszel) {
 	reverse_proxy beszel:8090
 }
 
-http://{$PORTAINER_HOST:portainer.localhost}, http://{$PORTAINER_ALT_HOST:portainer.infra.local} {
+{$BESZEL_HOST:beszel.localhost} {
+	import beszel
+}
+
+http://{$BESZEL_ALT_HOST:beszel.infra.local} {
+	import beszel
+}
+
+(portainer) {
 	reverse_proxy portainer:9000
 }
 
-http://{$BUGSINK_HOST:bugsink.localhost}, http://{$BUGSINK_ALT_HOST:bugsink.infra.local} {
+{$PORTAINER_HOST:portainer.localhost} {
+	import portainer
+}
+
+http://{$PORTAINER_ALT_HOST:portainer.infra.local} {
+	import portainer
+}
+
+(bugsink) {
 	reverse_proxy bugsink:8000
+}
+
+{$BUGSINK_HOST:bugsink.localhost} {
+	import bugsink
+}
+
+http://{$BUGSINK_ALT_HOST:bugsink.infra.local} {
+	import bugsink
 }
