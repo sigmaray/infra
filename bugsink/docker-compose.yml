@@ -1,0 +1,50 @@
+# Bugsink — self-hosted Sentry-compatible error tracking.
+# Docker apps and Caddy reach it at bugsink:8000 on the infra network.
+# Host-native access: http://127.0.0.1:${BUGSINK_PORT:-8000} (see README).
+# Put ../reverse-proxy/ (Caddy) in front for hostname-based access in production.
+#
+# Prerequisites: shared PostgreSQL on the infra network (../postgres/).
+#   cd ../postgres && ./scripts/create-database.sh bugsink
+#
+# First deploy:
+#   cp .env.example .env && $EDITOR .env
+#   docker compose up -d
+#   open the web UI and sign in with BUGSINK_CREATE_SUPERUSER credentials
+
+services:
+  bugsink:
+    image: bugsink/bugsink:2.2.2
+    container_name: bugsink
+    hostname: bugsink
+    restart: unless-stopped
+    logging:
+      options:
+        max-size: 10m
+    ports:
+      - "${BUGSINK_BIND_ADDRESS:-127.0.0.1}:${BUGSINK_PORT:-8000}:8000"
+    environment:
+      TZ: ${TZ:-Europe/Moscow}
+      PORT: 8000
+      SECRET_KEY: ${BUGSINK_SECRET_KEY:?Set BUGSINK_SECRET_KEY in .env}
+      CREATE_SUPERUSER: ${BUGSINK_CREATE_SUPERUSER:?Set BUGSINK_CREATE_SUPERUSER in .env}
+      DATABASE_URL: ${BUGSINK_DATABASE_URL:?Set BUGSINK_DATABASE_URL in .env}
+      BASE_URL: ${BUGSINK_BASE_URL:-http://127.0.0.1:8000}
+      BEHIND_HTTPS_PROXY: ${BUGSINK_BEHIND_HTTPS_PROXY:-false}
+      USE_X_FORWARDED_HOST: ${BUGSINK_USE_X_FORWARDED_HOST:-false}
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          'python -c ''import requests; requests.get("http://localhost:8000/health/ready").raise_for_status()''',
+        ]
+      interval: 10s
+      timeout: 20s
+      retries: 10
+      start_period: 60s
+    networks:
+      - infra
+
+networks:
+  infra:
+    external: true
+    name: infra

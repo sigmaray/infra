@@ -4,7 +4,7 @@
 
 | Component | Container | Host ports | Backend |
 |-----------|-----------|------------|---------|
-| Caddy (HTTP) | `reverse-proxy` | `80` | `wg-easy:51821`, `static-web:80`, `freshrss:80`, `uptime-kuma:3001`, `beszel:8090`, `portainer:9000` by hostname |
+| Caddy (HTTP) | `reverse-proxy` | `80` | `wg-easy:51821`, `static-web:80`, `freshrss:80`, `uptime-kuma:3001`, `beszel:8090`, `portainer:9000`, `bugsink:8000` by hostname |
 
 **Not proxied** (by design):
 
@@ -51,6 +51,7 @@ curl -fsS http://freshrss.localhost/
 curl -fsS http://status.localhost/
 curl -fsS http://beszel.localhost/
 curl -fsS http://portainer.localhost/api/status
+curl -fsS http://bugsink.localhost/health/ready
 ```
 
 ## Environment variables
@@ -70,6 +71,8 @@ curl -fsS http://portainer.localhost/api/status
 | `BESZEL_ALT_HOST` | `beszel.infra.local` | Alternate hostname for Beszel |
 | `PORTAINER_HOST` | `portainer.localhost` | Primary hostname for Portainer |
 | `PORTAINER_ALT_HOST` | `portainer.infra.local` | Alternate hostname for Portainer |
+| `BUGSINK_HOST` | `bugsink.localhost` | Primary hostname for Bugsink |
+| `BUGSINK_ALT_HOST` | `bugsink.infra.local` | Alternate hostname for Bugsink |
 | `CADDY_HTTP_PORT` | `80` | Host port for Caddy HTTP |
 | `CADDY_BIND_ADDRESS` | `0.0.0.0` | Bind for Caddy (`127.0.0.1` for local only) |
 
@@ -118,6 +121,11 @@ reverse-proxy/
 
 1. **Via Caddy (recommended):** set `PORTAINER_HOST=portainer.example.com`, point DNS to the server. Keep `PORTAINER_BIND_ADDRESS=127.0.0.1` in portainer.
 2. **Direct:** set `PORTAINER_BIND_ADDRESS=0.0.0.0` and open TCP `9443` in the firewall. Use HTTPS (self-signed by default).
+
+### bugsink
+
+1. **Via Caddy (recommended):** set `BUGSINK_HOST=bugsink.example.com`, point DNS to the server. Keep `BUGSINK_BIND_ADDRESS=127.0.0.1` in bugsink and set `BUGSINK_BASE_URL=https://bugsink.example.com` with `BUGSINK_BEHIND_HTTPS_PROXY=true`.
+2. **Direct:** set `BUGSINK_BIND_ADDRESS=0.0.0.0` and open TCP `8000` in the firewall.
 
 ### 3proxy (HTTP + SOCKS5)
 

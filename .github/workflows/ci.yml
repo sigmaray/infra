@@ -23,6 +23,7 @@ jobs:
           - uptime_kuma
           - beszel
           - portainer
+          - bugsink
           - reverse_proxy
 
     steps:

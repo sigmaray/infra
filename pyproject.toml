@@ -30,6 +30,7 @@ markers = [
     "uptime_kuma: Uptime Kuma stack tests",
     "beszel: Beszel stack tests",
     "portainer: Portainer stack tests",
+    "bugsink: Bugsink stack tests",
     "reverse_proxy: reverse-proxy stack tests",
     "integration: tests that start Docker containers",
 ]

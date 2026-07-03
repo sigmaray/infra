@@ -21,3 +21,7 @@ http://{$BESZEL_HOST:beszel.localhost}, http://{$BESZEL_ALT_HOST:beszel.infra.lo
 http://{$PORTAINER_HOST:portainer.localhost}, http://{$PORTAINER_ALT_HOST:portainer.infra.local} {
 	reverse_proxy portainer:9000
 }
+
+http://{$BUGSINK_HOST:bugsink.localhost}, http://{$BUGSINK_ALT_HOST:bugsink.infra.local} {
+	reverse_proxy bugsink:8000
+}
