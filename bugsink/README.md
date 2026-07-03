@@ -29,11 +29,11 @@ Deploy Bugsink:
 ```bash
 cd bugsink
 cp .env.example .env
-# set BUGSINK_SECRET_KEY, BUGSINK_CREATE_SUPERUSER, BUGSINK_DATABASE_URL
+# set BUGSINK_SECRET_KEY and BUGSINK_DATABASE_URL
 docker compose up -d
 ```
 
-Open `http://127.0.0.1:8000/` and sign in with the credentials from `BUGSINK_CREATE_SUPERUSER` (format `email:password`).
+Open `http://127.0.0.1:8000/` and create the admin account in the web UI.
 
 Verify:
 
@@ -42,7 +42,11 @@ docker compose ps
 curl -fsS http://127.0.0.1:8000/health/ready
 ```
 
-After the admin account works, remove `BUGSINK_CREATE_SUPERUSER` from `.env` (or leave it unset on redeploy) to avoid resetting credentials.
+Or create the first admin from the CLI:
+
+```bash
+docker compose exec bugsink python manage.py createsuperuser
+```
 
 ## Environment variables
 
@@ -51,12 +55,9 @@ After the admin account works, remove `BUGSINK_CREATE_SUPERUSER` from `.env` (or
 | `BUGSINK_BIND_ADDRESS` | `127.0.0.1` | Host bind address (`0.0.0.0` for internet access) |
 | `BUGSINK_PORT` | `8000` | Host port for direct access (maps to container port `8000`) |
 | `BUGSINK_SECRET_KEY` | — | Django secret key, at least 50 characters (required) |
-| `BUGSINK_CREATE_SUPERUSER` | — | Initial admin `email:password` (required on first start) |
 | `BUGSINK_DATABASE_URL` | — | PostgreSQL connection string (required) |
-| `BUGSINK_BASE_URL` | `http://127.0.0.1:8000` | Public URL for links and SDK setup |
-| `BUGSINK_BEHIND_HTTPS_PROXY` | `false` | Set to `true` behind Caddy or another HTTPS proxy |
-| `BUGSINK_USE_X_FORWARDED_HOST` | `false` | Set to `true` when proxy passes `X-Forwarded-Host` |
-| `TZ` | `Europe/Moscow` | Container timezone |
+
+Public URL, proxy settings, teams, and projects are configured in the Bugsink web UI.
 
 ### Database URL
 
@@ -114,9 +115,7 @@ Keep `BUGSINK_BIND_ADDRESS=127.0.0.1` and route traffic through [reverse-proxy](
 cd ../reverse-proxy
 # in .env:
 #   BUGSINK_HOST=bugsink.example.com
-# in bugsink/.env:
-#   BUGSINK_BASE_URL=https://bugsink.example.com
-#   BUGSINK_BEHIND_HTTPS_PROXY=true
+# set public URL and proxy options in the Bugsink web UI
 cp Caddyfile.example Caddyfile
 docker compose up -d
 ```
@@ -125,7 +124,7 @@ docker compose up -d
 curl -fsS -H 'Host: bugsink.infra.local' http://127.0.0.1/health/ready
 ```
 
-Caddy forwards `X-Forwarded-Proto`, `X-Real-IP`, and `X-Forwarded-For` by default — required when `BUGSINK_BEHIND_HTTPS_PROXY=true`.
+When using Caddy with HTTPS, enable the corresponding proxy settings in the Bugsink UI.
 
 ## Operations
 
@@ -157,11 +156,9 @@ Bugsink runs database migrations automatically on startup.
 3. Create `.env` with production settings:
    - Generate `BUGSINK_SECRET_KEY` with `openssl rand -base64 50`
    - Set `BUGSINK_DATABASE_URL` with the production postgres password
-   - Set `BUGSINK_BASE_URL=https://bugsink.example.com`
-   - Set `BUGSINK_BEHIND_HTTPS_PROXY=true` when using Caddy with HTTPS upstream
    - Keep `BUGSINK_BIND_ADDRESS=127.0.0.1` when using Caddy
 4. Run `docker compose up -d`.
-5. Sign in and create projects for each application.
+5. Create the admin account and configure public URL in the web UI.
 6. Configure [reverse-proxy](../reverse-proxy/) with `BUGSINK_HOST`.
 7. Point application Sentry SDKs at the public DSN.
 

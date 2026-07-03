@@ -30,9 +30,7 @@ CI_ENV: dict[str, str] = {
     "PORTAINER_HTTPS_PORT": "19443",
     "BUGSINK_PORT": "18000",
     "BUGSINK_SECRET_KEY": "ci-test-secret-key-at-least-fifty-characters-long-here",
-    "BUGSINK_CREATE_SUPERUSER": "admin@example.org:ci-test-password",
     "BUGSINK_DATABASE_URL": "postgresql://postgres:ci-test-password@postgresql:5432/bugsink",
-    "BUGSINK_BASE_URL": "http://127.0.0.1:18000",
     "CADDY_BIND_ADDRESS": "127.0.0.1",
 }
 

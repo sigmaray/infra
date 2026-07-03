@@ -124,7 +124,7 @@ reverse-proxy/
 
 ### bugsink
 
-1. **Via Caddy (recommended):** set `BUGSINK_HOST=bugsink.example.com`, point DNS to the server. Keep `BUGSINK_BIND_ADDRESS=127.0.0.1` in bugsink and set `BUGSINK_BASE_URL=https://bugsink.example.com` with `BUGSINK_BEHIND_HTTPS_PROXY=true`.
+1. **Via Caddy (recommended):** set `BUGSINK_HOST=bugsink.example.com`, point DNS to the server. Keep `BUGSINK_BIND_ADDRESS=127.0.0.1` in bugsink and set the public URL in the Bugsink web UI.
 2. **Direct:** set `BUGSINK_BIND_ADDRESS=0.0.0.0` and open TCP `8000` in the firewall.
 
 ### 3proxy (HTTP + SOCKS5)
