@@ -2,7 +2,7 @@
 
 [Beszel](https://github.com/henrygd/beszel) — lightweight self-hosted server monitoring (CPU, memory, disk, network, Docker containers, alerts) on the shared `infra` Docker network.
 
-This stack runs the **hub** (web dashboard). Deploy a **beszel-agent** on each host you want to monitor — see [Agent deployment](#agent-deployment).
+This stack runs the **hub** (web dashboard) and can monitor **the same host** via a local agent — see [Local host monitoring](#local-host-monitoring).
 
 | Access | URL |
 |--------|-----|
@@ -37,13 +37,49 @@ curl -fsS http://127.0.0.1:8090/
 | `BESZEL_PORT` | `8090` | Host port for direct access (maps to container port `8090`) |
 | `BESZEL_APP_URL` | `http://127.0.0.1:8090` | Public URL for links and OAuth (set to Caddy hostname in production) |
 | `TZ` | `Europe/Moscow` | Container timezone |
+| `BESZEL_AGENT_HUB_URL` | `http://127.0.0.1:8090` | Hub URL for the local agent (set by `enable-local-agent.sh`) |
+| `BESZEL_AGENT_KEY` | — | Hub public key for the local agent |
+| `BESZEL_AGENT_TOKEN` | — | Universal token for the local agent |
+
+## Local host monitoring
+
+Monitor the VPS that runs the hub via a Unix socket (no open ports, no manual **Add System** step).
+
+```bash
+cd beszel
+cp .env.example .env
+docker compose up -d
+# create the admin account at http://127.0.0.1:8090/
+./scripts/enable-local-agent.sh
+docker compose --profile local-agent up -d
+```
+
+The script authenticates to the hub, enables a **universal token**, and writes `BESZEL_AGENT_*` variables to `.env`. The agent connects through `./beszel_socket/beszel.sock`; the hub auto-creates a system record on first connection.
+
+Verify in the UI: the systems table should show a new host with a green status.
+
+```bash
+docker compose --profile local-agent ps
+docker compose logs -f beszel-agent
+```
+
+To re-run after token rotation:
+
+```bash
+./scripts/enable-local-agent.sh
+docker compose --profile local-agent up -d
+```
 
 ## Layout
 
 ```
 beszel/
 ├── docker-compose.yml
-├── data/                        # PocketBase DB and config (created on first start, gitignored)
+├── scripts/
+│   └── enable-local-agent.sh  # fetch KEY + universal TOKEN into .env
+├── data/                        # PocketBase DB (gitignored)
+├── beszel_socket/               # hub ↔ local agent Unix socket (gitignored)
+├── beszel_agent_data/           # local agent state (gitignored)
 ├── .env.example
 └── .env                         # gitignored
 ```
@@ -70,7 +106,10 @@ curl -fsS -H 'Host: beszel.infra.local' http://127.0.0.1/
 
 ```bash
 docker compose logs -f beszel
+docker compose --profile local-agent logs -f beszel-agent
 docker compose up -d
+docker compose --profile local-agent up -d
+docker compose --profile local-agent down
 docker compose down
 ```
 
@@ -82,8 +121,9 @@ docker compose down
    - Keep `BESZEL_BIND_ADDRESS=127.0.0.1` when using Caddy
 3. Run `docker compose up -d`.
 4. Create the admin account via the web UI.
-5. Add systems and deploy agents on each monitored host (see below).
-6. Configure alerts (CPU, memory, disk, etc.) in the dashboard.
+5. Run `./scripts/enable-local-agent.sh` and `docker compose --profile local-agent up -d` to monitor the same VPS.
+6. Deploy agents on other hosts if needed (see below).
+7. Configure alerts (CPU, memory, disk, etc.) in the dashboard.
 
 Recommended: keep the host port on `127.0.0.1` and expose the UI only through Caddy with a real hostname and TLS upstream.
 
@@ -120,7 +160,7 @@ Steps in the hub UI:
 
 ### Same host as hub (Unix socket)
 
-To monitor the VPS that runs the hub, use a shared Unix socket instead of TCP. See the [official hub + local agent guide](https://beszel.dev/guide/hub-installation) for the full `beszel_socket` setup.
+Included in this stack — see [Local host monitoring](#local-host-monitoring). For manual setup, use Host/IP `/beszel_socket/beszel.sock` in the **Add System** dialog instead of the universal-token flow.
 
 ## Backups
 

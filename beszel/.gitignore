@@ -1,2 +1,4 @@
 .env
 data/
+beszel_socket/
+beszel_agent_data/

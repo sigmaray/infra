@@ -71,3 +71,5 @@ def test_beszel_local_and_docker_network(docker, ci_env) -> None:
     finally:
         docker_compose("down", cwd=beszel_dir, check=False)
         remove_path(beszel_dir / "data")
+        remove_path(beszel_dir / "beszel_socket")
+        remove_path(beszel_dir / "beszel_agent_data")

@@ -1,12 +1,14 @@
-# Beszel — self-hosted server monitoring hub.
-# Docker apps and Caddy reach it at beszel:8090 on the infra network.
+# Beszel — self-hosted server monitoring hub + optional local agent.
+# Docker apps and Caddy reach the hub at beszel:8090 on the infra network.
 # Host-native access: http://127.0.0.1:${BESZEL_PORT:-8090} (see README).
 # Put ../reverse-proxy/ (Caddy) in front for hostname-based access in production.
 #
 # First deploy:
 #   cp .env.example .env && $EDITOR .env
 #   docker compose up -d
-#   open the web UI to create the admin account and add systems
+#   open the web UI to create the admin account
+#   ./scripts/enable-local-agent.sh   # monitors this host via Unix socket
+#   docker compose --profile local-agent up -d
 
 services:
   beszel:
@@ -21,6 +23,7 @@ services:
       - "${BESZEL_BIND_ADDRESS:-127.0.0.1}:${BESZEL_PORT:-8090}:8090"
     volumes:
       - ./data:/beszel_data
+      - ./beszel_socket:/beszel_socket
     environment:
       TZ: ${TZ:-Europe/Moscow}
       APP_URL: ${BESZEL_APP_URL:-http://127.0.0.1:8090}
@@ -32,6 +35,25 @@ services:
       start_period: 30s
     networks:
       - infra
+
+  beszel-agent:
+    profiles: ["local-agent"]
+    image: henrygd/beszel-agent:0.18.7
+    container_name: beszel-agent
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - ./beszel_agent_data:/var/lib/beszel-agent
+      - ./beszel_socket:/beszel_socket
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    environment:
+      LISTEN: /beszel_socket/beszel.sock
+      HUB_URL: ${BESZEL_AGENT_HUB_URL:-http://127.0.0.1:8090}
+      TOKEN: ${BESZEL_AGENT_TOKEN:-}
+      KEY: ${BESZEL_AGENT_KEY:-}
+    depends_on:
+      beszel:
+        condition: service_healthy
 
 networks:
   infra:
