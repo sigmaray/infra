@@ -92,6 +92,7 @@ The port is bound to `127.0.0.1` — Redis is not exposed to the public internet
 redis/
 ├── docker-compose.yml
 ├── redis.conf
+├── data/                         # AOF/RDB files (bind mount, not in git)
 └── .env.example
 ```
 
@@ -105,7 +106,8 @@ docker compose logs -f redis
 docker compose down
 
 # stop and delete data (destructive!)
-docker compose down -v
+docker compose down
+rm -rf data
 
 # redis-cli shell
 docker compose exec redis redis-cli -a "$REDIS_PASSWORD"

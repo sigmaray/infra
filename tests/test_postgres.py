@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from helpers import REPO_ROOT, docker_compose, ensure_infra_network, run
+from helpers import REPO_ROOT, docker_compose, ensure_infra_network, remove_path, run
 
 pytestmark = [pytest.mark.postgres]
 
@@ -46,8 +46,10 @@ def test_postgres_and_go_client(docker, ci_env) -> None:
     go_client_compose = REPO_ROOT / "docs/go-client/docker-compose.yml"
     postgres_user = ci_env["POSTGRES_USER"]
 
+    postgres_dir = REPO_ROOT / "postgres"
     try:
         ensure_infra_network()
+        remove_path(postgres_dir / "data")
         docker_compose("up", "-d", "--wait", compose_file=postgres_compose)
 
         run(
@@ -89,4 +91,5 @@ def test_postgres_and_go_client(docker, ci_env) -> None:
         )
     finally:
         docker_compose("down", "--rmi", "local", compose_file=go_client_compose, check=False)
-        docker_compose("down", "-v", compose_file=postgres_compose, check=False)
+        docker_compose("down", compose_file=postgres_compose, check=False)
+        remove_path(postgres_dir / "data")

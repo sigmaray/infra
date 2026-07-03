@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from helpers import REPO_ROOT, docker_compose, ensure_infra_network, run
+from helpers import REPO_ROOT, docker_compose, ensure_infra_network, remove_path, run
 
 pytestmark = [pytest.mark.redis]
 
@@ -19,6 +19,7 @@ def test_redis_local_and_docker_network(docker, ci_env) -> None:
 
     try:
         ensure_infra_network()
+        remove_path(redis_dir / "data")
         docker_compose("up", "-d", "--wait", cwd=redis_dir)
 
         local_ping = run(
@@ -86,4 +87,5 @@ def test_redis_local_and_docker_network(docker, ci_env) -> None:
         )
         assert "aof_enabled:1" in info.stdout
     finally:
-        docker_compose("down", "-v", cwd=redis_dir, check=False)
+        docker_compose("down", cwd=redis_dir, check=False)
+        remove_path(redis_dir / "data")

@@ -79,6 +79,7 @@ The port is bound to `127.0.0.1` — PostgreSQL is not exposed to the public int
 postgres/
 ├── docker-compose.yml
 ├── .env.example
+├── data/                         # PostgreSQL cluster (bind mount, not in git)
 ├── init/
 │   ├── 01-flask-weather.sh       # CREATE DATABASE weather (first start)
 │   └── 20-extra-databases.sh.example
@@ -105,7 +106,7 @@ cp init/20-extra-databases.sh.example init/20-myapp.sh
 chmod +x init/20-myapp.sh
 ```
 
-Scripts in `init/` run **only on first initialization** (empty `volume-postgres` volume). If the cluster is already up, use `create-database.sh` instead.
+Scripts in `init/` run **only on first initialization** (empty `data/` directory). If the cluster is already up, use `create-database.sh` instead.
 
 ## Operations
 
@@ -117,7 +118,8 @@ docker compose logs -f postgres
 docker compose down
 
 # stop and delete data (destructive!)
-docker compose down -v
+docker compose down
+rm -rf data
 
 # psql shell
 docker compose exec postgres psql -U postgres
