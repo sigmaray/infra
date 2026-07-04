@@ -33,6 +33,11 @@ CI_ENV: dict[str, str] = {
     "BUGSINK_CREATE_SUPERUSER": "admin@example.org:ci-test-password",
     "BUGSINK_DATABASE_URL": "postgresql://postgres:ci-test-password@postgresql:5432/bugsink",
     "CADDY_BIND_ADDRESS": "127.0.0.1",
+    "VPN_IPSEC_PSK": "ci-test-ipsec-psk-twenty-chars",
+    "VPN_USER": "ci-vpn-user",
+    "VPN_PASSWORD": "ci-test-vpn-password",
+    "IPSEC_VPN_IKE_PORT": "1500",
+    "IPSEC_VPN_NAT_PORT": "14500",
 }
 
 

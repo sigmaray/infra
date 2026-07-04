@@ -24,6 +24,7 @@ jobs:
           - beszel
           - portainer
           - bugsink
+          - ipsec_vpn
           - reverse_proxy
 
     steps:

@@ -1,0 +1,51 @@
+# IPsec VPN server (hwdsl2/ipsec-vpn-server) with IPsec/L2TP, Cisco IPsec and IKEv2.
+# UDP ports 500 and 4500 must be open on the firewall and cloud security group.
+# Not proxied via Caddy — clients connect directly with IPsec/L2TP or IKEv2.
+#
+# First deploy:
+#   cp .env.example .env && $EDITOR .env
+#   docker network create infra  # if not already created
+#   docker compose up -d
+
+services:
+  ipsec-vpn:
+    image: hwdsl2/ipsec-vpn-server@sha256:c502be5d6af0cf7d5e985a9dd0a652a74f5d09d8fb36a899e7982877db0f4657
+    container_name: ipsec-vpn
+    hostname: ipsec-vpn
+    restart: unless-stopped
+    privileged: true
+    environment:
+      VPN_IPSEC_PSK: ${VPN_IPSEC_PSK:?Set VPN_IPSEC_PSK in .env}
+      VPN_USER: ${VPN_USER:-vpnuser}
+      VPN_PASSWORD: ${VPN_PASSWORD:?Set VPN_PASSWORD in .env}
+      VPN_DNS_NAME: ${VPN_DNS_NAME:-}
+      VPN_CLIENT_NAME: ${VPN_CLIENT_NAME:-}
+      VPN_DNS_SRV1: ${VPN_DNS_SRV1:-}
+      VPN_DNS_SRV2: ${VPN_DNS_SRV2:-}
+      VPN_PUBLIC_IP: ${VPN_PUBLIC_IP:-}
+      VPN_PROTECT_CONFIG: ${VPN_PROTECT_CONFIG:-}
+    ports:
+      - "${IPSEC_VPN_IKE_PORT:-500}:500/udp"
+      - "${IPSEC_VPN_NAT_PORT:-4500}:4500/udp"
+    volumes:
+      - ./data:/etc/ipsec.d
+      - /lib/modules:/lib/modules:ro
+    sysctls:
+      - net.ipv4.ip_forward=1
+    healthcheck:
+      test: ["CMD-SHELL", "ipsec status 2>/dev/null | grep -q pluto_version"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 45s
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+    networks:
+      - infra
+
+networks:
+  infra:
+    external: true
+    name: infra
