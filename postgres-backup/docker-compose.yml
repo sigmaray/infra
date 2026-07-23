@@ -25,6 +25,14 @@ services:
       BACKUP_RETENTION_DAYS: ${BACKUP_RETENTION_DAYS:-14}
       BACKUP_CRON: ${BACKUP_CRON:-0 3 * * *}
       BACKUP_LOG: /backups/backup.log
+      BACKUP_LOCAL: ${BACKUP_LOCAL:-true}
+      BACKUP_S3: ${BACKUP_S3:-false}
+      S3_BUCKET: ${S3_BUCKET:-}
+      S3_PREFIX: ${S3_PREFIX:-postgres}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+      AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION:-us-east-1}
+      AWS_ENDPOINT_URL: ${AWS_ENDPOINT_URL:-}
       TZ: ${TZ:-UTC}
     volumes:
       - ./backups:/backups
