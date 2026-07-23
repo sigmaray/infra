@@ -8,6 +8,8 @@
 #
 # Add another project database later:
 #   ./scripts/create-database.sh <db_name>
+#
+# Automated dumps: ../postgres-backup/
 
 services:
   postgres:

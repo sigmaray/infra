@@ -1,0 +1,37 @@
+# Scheduled PostgreSQL dumps (supercronic + pg_dump).
+# Joins the infra network and connects to container postgresql:5432.
+#
+# Prerequisites: shared PostgreSQL (../postgres/) running on network infra.
+#
+# First deploy:
+#   cp .env.example .env && $EDITOR .env   # same POSTGRES_PASSWORD as postgres/
+#   docker compose up -d --build
+
+services:
+  backup:
+    build: .
+    image: infra-postgres-backup:16.14
+    container_name: postgresql-backup
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      PGUSER: ${POSTGRES_USER:-postgres}
+      PGPASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      PGHOST: ${PGHOST:-postgresql}
+      PGPORT: ${PGPORT:-5432}
+      BACKUP_DATABASES: ${BACKUP_DATABASES:-}
+      BACKUP_DIR: /backups
+      BACKUP_RETENTION_DAYS: ${BACKUP_RETENTION_DAYS:-14}
+      BACKUP_CRON: ${BACKUP_CRON:-0 3 * * *}
+      BACKUP_LOG: /backups/backup.log
+      TZ: ${TZ:-UTC}
+    volumes:
+      - ./backups:/backups
+    networks:
+      - infra
+
+networks:
+  infra:
+    external: true
+    name: infra

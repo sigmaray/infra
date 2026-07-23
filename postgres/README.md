@@ -135,7 +135,9 @@ Deploy containerized applications on the `infra` network with `DATABASE_URL` poi
 
 ## Backups
 
-Dump a single database:
+Automated scheduled dumps live in a separate stack: [`../postgres-backup/`](../postgres-backup/).
+
+Manual one-off dump:
 
 ```bash
 docker compose exec -T postgres pg_dump -U postgres -Fc weather > weather.dump
